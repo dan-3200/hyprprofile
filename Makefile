@@ -1,12 +1,14 @@
 BINARY_NAME ?= hyprprofile
+LAUNCHER_NAME ?= hyprprofile-session-launcher
 BUILD_DIR ?= bin
 MAIN_PACKAGE ?= ./cmd/hyprprofile
+LAUNCHER_PACKAGE ?= ./cmd/hyprprofile-session-launcher
 GO ?= go
 PROJECT_CACHE_DIR := $(CURDIR)/.cache
 TOOLS_DIR ?= $(CURDIR)/.tools/bin
 GOLANGCI_LINT_VERSION ?= v2.15.0
 GOLANGCI_LINT ?= $(TOOLS_DIR)/golangci-lint
-GO_ENV := GOCACHE=$(PROJECT_CACHE_DIR)/go-build
+GO_ENV := GOCACHE=$(PROJECT_CACHE_DIR)/go-build GOMODCACHE=$(PROJECT_CACHE_DIR)/go-mod
 LINT_ENV := $(GO_ENV) GOLANGCI_LINT_CACHE=$(PROJECT_CACHE_DIR)/golangci-lint
 
 .DEFAULT_GOAL := help
@@ -23,6 +25,7 @@ check: lint test ## Run all quality checks
 build: ## Build the CLI in the build directory
 	@mkdir -p $(BUILD_DIR)
 	$(GO_ENV) $(GO) build -trimpath -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PACKAGE)
+	$(GO_ENV) $(GO) build -trimpath -o $(BUILD_DIR)/$(LAUNCHER_NAME) $(LAUNCHER_PACKAGE)
 
 run: ## Run the CLI; pass arguments with ARGS="..."
 	$(GO_ENV) $(GO) run $(MAIN_PACKAGE) $(ARGS)
