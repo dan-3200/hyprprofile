@@ -92,6 +92,19 @@ func (s *Store) Load(id string) (profile.Manifest, error) {
 
 // Create creates a profile through a temporary sibling directory and atomic rename.
 func (s *Store) Create(manifest profile.Manifest) error {
+	return s.CreateFromTemplate(manifest, profile.DefaultTemplate)
+}
+
+// CreateFromTemplate creates a profile from a named embedded template.
+func (s *Store) CreateFromTemplate(manifest profile.Manifest, templateName string) error {
+	if filepath.Ext(manifest.Entrypoint) != ".lua" {
+		return errors.New("embedded templates require a .lua entrypoint")
+	}
+	template, loadErr := profile.LoadTemplate(templateName)
+	if loadErr != nil {
+		return fmt.Errorf("load profile template: %w", loadErr)
+	}
+	manifest.Template = templateName
 	if err := manifest.Validate(); err != nil {
 		return fmt.Errorf("validate new manifest: %w", err)
 	}
@@ -117,7 +130,7 @@ func (s *Store) Create(manifest profile.Manifest) error {
 	if err := writeManifest(temporary, manifest); err != nil {
 		return err
 	}
-	if err := writePrivateFile(filepath.Join(temporary, manifest.Entrypoint), []byte(profile.DefaultLuaConfig)); err != nil {
+	if err := writePrivateFile(filepath.Join(temporary, manifest.Entrypoint), template); err != nil {
 		return fmt.Errorf("write default entrypoint: %w", err)
 	}
 	if err := os.Rename(temporary, destination); err != nil {

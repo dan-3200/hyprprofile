@@ -1,6 +1,9 @@
 package profile
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestValidateID(t *testing.T) {
 	t.Parallel()
@@ -35,5 +38,14 @@ func TestValidateRelativePath(t *testing.T) {
 		if err := ValidateRelativePath(candidate); err == nil {
 			t.Errorf("ValidateRelativePath(%q) unexpectedly succeeded", candidate)
 		}
+	}
+}
+
+func TestManifestRejectsUnsafeTemplateName(t *testing.T) {
+	t.Parallel()
+	manifest := NewManifest("minimal", "Minimal", "", DefaultEntrypoint, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	manifest.Template = "../outside"
+	if err := manifest.Validate(); err == nil {
+		t.Fatal("Validate() unexpectedly accepted an unsafe template name")
 	}
 }

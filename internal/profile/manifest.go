@@ -27,6 +27,7 @@ type Manifest struct {
 	Name             string    `toml:"name"`
 	Description      string    `toml:"description,omitempty"`
 	Entrypoint       string    `toml:"entrypoint"`
+	Template         string    `toml:"template,omitempty"`
 	Components       []string  `toml:"components,omitempty"`
 	RequiredCommands []string  `toml:"required_commands,omitempty"`
 	Origin           string    `toml:"origin,omitempty"`
@@ -74,6 +75,9 @@ func (m Manifest) Validate() error {
 	if err := ValidateRelativePath(m.Entrypoint); err != nil {
 		return fmt.Errorf("invalid entrypoint: %w", err)
 	}
+	if m.Template != "" && !idPattern.MatchString(m.Template) {
+		return fmt.Errorf("invalid template name %q", m.Template)
+	}
 	if m.CreatedAt.IsZero() || m.UpdatedAt.IsZero() {
 		return errors.New("manifest timestamps cannot be empty")
 	}
@@ -95,8 +99,3 @@ func ValidateRelativePath(candidate string) error {
 	}
 	return nil
 }
-
-// DefaultLuaConfig is a minimal Hyprland Lua entrypoint for new profiles.
-const DefaultLuaConfig = `-- Managed by HyprProfile.
--- Add your Hyprland configuration below.
-`

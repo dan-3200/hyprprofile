@@ -101,7 +101,8 @@ Usage:
 Commands:
   list
   status
-  create <id> --name <name>
+  create <id> --name <name> [--template <template>]
+  templates
   clone <source-id> <new-id> [--name <name>]
   import <absolute-directory> <id> [--name <name>]
   validate <id>

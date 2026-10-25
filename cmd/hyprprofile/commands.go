@@ -23,6 +23,8 @@ func run(arguments []string, store *storage.Store, manager session.Manager) erro
 		return showStatus(store, manager)
 	case "create":
 		return createProfile(arguments[1:], store)
+	case "templates":
+		return listTemplates(arguments[1:])
 	case "clone":
 		return cloneProfile(arguments[1:], store)
 	case "import":
@@ -87,21 +89,39 @@ func showStatus(store *storage.Store, manager session.Manager) error {
 
 func createProfile(arguments []string, store *storage.Store) error {
 	if len(arguments) == 0 {
-		return errors.New("usage: create <id> --name <name>")
+		return errors.New("usage: create <id> --name <name> [--template <template>]")
 	}
 	flags := flag.NewFlagSet("create", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	name := flags.String("name", "", "profile name")
 	description := flags.String("description", "", "profile description")
 	entrypoint := flags.String("entrypoint", profile.DefaultEntrypoint, "relative entrypoint")
+	templateName := flags.String("template", profile.DefaultTemplate, "profile template")
 	if err := flags.Parse(arguments[1:]); err != nil {
 		return fmt.Errorf("parse create flags: %w", err)
 	}
+	if flags.NArg() != 0 {
+		return errors.New("usage: create <id> --name <name> [--template <template>]")
+	}
 	manifest := profile.NewManifest(arguments[0], *name, *description, *entrypoint, time.Now())
-	if err := store.Create(manifest); err != nil {
+	if err := store.CreateFromTemplate(manifest, *templateName); err != nil {
 		return fmt.Errorf("create profile: %w", err)
 	}
-	fmt.Printf("Created profile %q\n", manifest.ID)
+	fmt.Printf("Created profile %q from template %q\n", manifest.ID, *templateName)
+	return nil
+}
+
+func listTemplates(arguments []string) error {
+	if len(arguments) != 0 {
+		return errors.New("usage: templates")
+	}
+	for _, template := range profile.Templates() {
+		marker := " "
+		if template.Name == profile.DefaultTemplate {
+			marker = "*"
+		}
+		fmt.Printf("%s %-12s %s\n", marker, template.Name, template.Description)
+	}
 	return nil
 }
 

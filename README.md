@@ -102,11 +102,25 @@ sudo /usr/local/bin/hyprprofile uninstall-session
 Crie um perfil, valide-o e marque-o para a próxima sessão:
 
 ```bash
-bin/hyprprofile create pessoal --name "Pessoal"
+bin/hyprprofile templates
+bin/hyprprofile create pessoal --name "Pessoal" --template minimal
 # Edite ~/.config/hypr-profiles/pessoal/hyprland.lua
 bin/hyprprofile validate pessoal
 bin/hyprprofile activate pessoal
 ```
+
+Os templates disponíveis ficam em `internal/profile/templates/` e são
+incorporados ao binário durante a compilação:
+
+- `minimal` (padrão): terminal, Wofi, Waybar, Mako, workspaces e controles de
+  janelas;
+- `bare`: terminal, workspaces e controles essenciais, sem componentes
+  opcionais iniciados automaticamente.
+
+Nos dois, `Super+Enter` abre o Kitty, `Super+Q` fecha a janela ativa e
+`Super+Shift+M` encerra o Hyprland. O template `minimal` também usa `Super+D`
+para abrir o Wofi. Edite o `hyprland.lua` do perfil para personalizar esses
+padrões.
 
 Ao iniciar uma sessão, execute o launcher. Ele usa `start-hyprland` quando
 presente e faz fallback para `Hyprland`.
@@ -124,7 +138,8 @@ navegar, `r` para atualizar e `q` ou `Ctrl+C` para sair.
 | --- | --- |
 | `list` | Lista os perfis; `*` identifica o perfil ativo. |
 | `status` | Exibe o perfil selecionado para a próxima sessão. |
-| `create <id> --name <nome>` | Cria um perfil com `hyprland.lua` inicial. |
+| `create <id> --name <nome> [--template <nome>]` | Cria um perfil usando um template embutido. |
+| `templates` | Lista os templates disponíveis; `*` identifica o padrão. |
 | `clone <origem> <id> [--name <nome>]` | Duplica um perfil existente. |
 | `import <diretório-absoluto> <id> [--name <nome>]` | Importa uma configuração existente. |
 | `validate <id>` | Verifica manifesto, entrada, comandos exigidos e segurança dos caminhos. |
@@ -140,11 +155,12 @@ Use `bin/hyprprofile help` para consultar a ajuda integrada.
 ### Exemplos
 
 ```bash
-# Criar com um ponto de entrada diferente
+# Criar o perfil enxuto em um subdiretório
 bin/hyprprofile create trabalho \
   --name "Trabalho" \
   --description "Monitores e atalhos do escritório" \
-  --entrypoint config/hyprland.conf
+  --template bare \
+  --entrypoint config/hyprland.lua
 
 # Importar uma configuração já existente; a entrada é detectada quando omitida
 bin/hyprprofile import "$HOME/.config/hypr" legado --name "Configuração antiga"
