@@ -97,14 +97,15 @@ func (s *Store) Create(manifest profile.Manifest) error {
 
 // CreateFromTemplate creates a profile from a named embedded template.
 func (s *Store) CreateFromTemplate(manifest profile.Manifest, templateName string) error {
-	if filepath.Ext(manifest.Entrypoint) != ".lua" {
-		return errors.New("embedded templates require a .lua entrypoint")
-	}
-	template, loadErr := profile.LoadTemplate(templateName)
+	template, files, loadErr := profile.LoadTemplate(templateName)
 	if loadErr != nil {
 		return fmt.Errorf("load profile template: %w", loadErr)
 	}
+	if manifest.Entrypoint != template.Entrypoint {
+		return fmt.Errorf("template %q requires entrypoint %q", templateName, template.Entrypoint)
+	}
 	manifest.Template = templateName
+	manifest.RequiredCommands = append([]string(nil), template.RequiredCommands...)
 	if err := manifest.Validate(); err != nil {
 		return fmt.Errorf("validate new manifest: %w", err)
 	}
@@ -130,8 +131,10 @@ func (s *Store) CreateFromTemplate(manifest profile.Manifest, templateName strin
 	if err := writeManifest(temporary, manifest); err != nil {
 		return err
 	}
-	if err := writePrivateFile(filepath.Join(temporary, manifest.Entrypoint), template); err != nil {
-		return fmt.Errorf("write default entrypoint: %w", err)
+	for _, templateFile := range files {
+		if err := writePrivateFile(filepath.Join(temporary, templateFile.Path), templateFile.Data); err != nil {
+			return fmt.Errorf("write template file %q: %w", templateFile.Path, err)
+		}
 	}
 	if err := os.Rename(temporary, destination); err != nil {
 		return fmt.Errorf("activate new profile: %w", err)

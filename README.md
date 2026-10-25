@@ -115,12 +115,15 @@ incorporados ao binário durante a compilação:
 - `minimal` (padrão): terminal, Wofi, Waybar, Mako, workspaces e controles de
   janelas;
 - `bare`: terminal, workspaces e controles essenciais, sem componentes
-  opcionais iniciados automaticamente.
+  opcionais iniciados automaticamente;
+- `serpantinum`: configuração modular para o shell Serpantinum, com módulos
+  separados de ambiente, monitores, aparência, autostart e atalhos.
 
 Nos dois, `Super+Enter` abre o Kitty, `Super+Q` fecha a janela ativa e
 `Super+Shift+M` encerra o Hyprland. O template `minimal` também usa `Super+D`
 para abrir o Wofi. Edite o `hyprland.lua` do perfil para personalizar esses
-padrões.
+padrões. O template `serpantinum` requer os executáveis `serpantinum` e
+`serpantinumd`; a validação avisa quando eles não estão instalados.
 
 Ao iniciar uma sessão, execute o launcher. Ele usa `start-hyprland` quando
 presente e faz fallback para `Hyprland`.
@@ -155,12 +158,14 @@ Use `bin/hyprprofile help` para consultar a ajuda integrada.
 ### Exemplos
 
 ```bash
-# Criar o perfil enxuto em um subdiretório
+# Criar o perfil enxuto
 bin/hyprprofile create trabalho \
   --name "Trabalho" \
   --description "Monitores e atalhos do escritório" \
-  --template bare \
-  --entrypoint config/hyprland.lua
+  --template bare
+
+# Criar uma configuração modular para o shell Serpantinum
+bin/hyprprofile create shell --name "Serpantinum" --template serpantinum
 
 # Importar uma configuração já existente; a entrada é detectada quando omitida
 bin/hyprprofile import "$HOME/.config/hypr" legado --name "Configuração antiga"

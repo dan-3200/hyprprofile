@@ -85,6 +85,26 @@ func TestCreateFromTemplateRequiresLuaEntrypoint(t *testing.T) {
 	}
 }
 
+func TestCreateFromTemplateWritesMultipleFiles(t *testing.T) {
+	store := testStore(t)
+	manifest := testManifest("serpantinum-profile", "Serpantinum profile")
+	if err := store.CreateFromTemplate(manifest, "serpantinum"); err != nil {
+		t.Fatalf("CreateFromTemplate() error = %v", err)
+	}
+	for _, relative := range []string{"hyprland.lua", "config/keybinds.lua", "config/settings.lua"} {
+		if _, err := os.Stat(filepath.Join(store.Paths.ProfilesDir, manifest.ID, relative)); err != nil {
+			t.Errorf("template file %q is unavailable: %v", relative, err)
+		}
+	}
+	loaded, err := store.Load(manifest.ID)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if loaded.Template != "serpantinum" {
+		t.Fatalf("template = %q, want serpantinum", loaded.Template)
+	}
+}
+
 func TestImportRejectsSymbolicLinks(t *testing.T) {
 	store := testStore(t)
 	source := t.TempDir()

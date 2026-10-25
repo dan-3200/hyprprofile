@@ -95,7 +95,6 @@ func createProfile(arguments []string, store *storage.Store) error {
 	flags.SetOutput(os.Stderr)
 	name := flags.String("name", "", "profile name")
 	description := flags.String("description", "", "profile description")
-	entrypoint := flags.String("entrypoint", profile.DefaultEntrypoint, "relative entrypoint")
 	templateName := flags.String("template", profile.DefaultTemplate, "profile template")
 	if err := flags.Parse(arguments[1:]); err != nil {
 		return fmt.Errorf("parse create flags: %w", err)
@@ -103,7 +102,7 @@ func createProfile(arguments []string, store *storage.Store) error {
 	if flags.NArg() != 0 {
 		return errors.New("usage: create <id> --name <name> [--template <template>]")
 	}
-	manifest := profile.NewManifest(arguments[0], *name, *description, *entrypoint, time.Now())
+	manifest := profile.NewManifest(arguments[0], *name, *description, profile.DefaultEntrypoint, time.Now())
 	if err := store.CreateFromTemplate(manifest, *templateName); err != nil {
 		return fmt.Errorf("create profile: %w", err)
 	}

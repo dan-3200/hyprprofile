@@ -1,0 +1,5 @@
+hl.on("hyprland.start", function()
+  hl.exec_cmd("sh -lc 'command -v wl-paste >/dev/null && command -v cliphist >/dev/null && wl-paste --type text --watch cliphist store'")
+  hl.exec_cmd("sh -lc 'command -v wl-paste >/dev/null && command -v cliphist >/dev/null && wl-paste --type image --watch cliphist store'")
+  hl.exec_cmd("sh -lc 'command -v serpantinumd >/dev/null && exec serpantinumd start'")
+end)
