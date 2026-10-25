@@ -30,8 +30,9 @@ build: ## Build the CLI in the build directory
 run: ## Run the CLI; pass arguments with ARGS="..."
 	$(GO_ENV) $(GO) run $(MAIN_PACKAGE) $(ARGS)
 
-install: ## Install the CLI using the active Go environment
+install: ## Install the CLI and session launcher using the active Go environment
 	$(GO_ENV) $(GO) install $(MAIN_PACKAGE)
+	$(GO_ENV) $(GO) install $(LAUNCHER_PACKAGE)
 
 test: ## Run the test suite
 	$(GO_ENV) $(GO) test ./...

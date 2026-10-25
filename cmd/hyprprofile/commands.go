@@ -37,6 +37,10 @@ func run(arguments []string, store *storage.Store, manager session.Manager) erro
 		return restoreProfile(arguments[1:], store)
 	case "doctor":
 		return doctor(store)
+	case "install-session":
+		return installSession(arguments[1:])
+	case "uninstall-session":
+		return uninstallSession(arguments[1:])
 	case "help", "--help", "-h":
 		printUsage()
 		return nil

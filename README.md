@@ -8,10 +8,10 @@ do dia a dia.
 O projeto é uma ferramenta local de terminal: não expõe servidor HTTP nem
 depende de rede durante sua execução.
 
-> Estado atual: a base de perfis, a CLI, o painel TUI e o launcher de sessão já
-> estão funcionais. Integração com display managers, instalação de serviço,
-> backups versionados e ações administrativas ainda não fazem parte desta
-> versão.
+> Estado atual: a base de perfis, a CLI, o painel TUI, o launcher de sessão e a
+> integração por entrada Wayland com display managers já estão funcionais.
+> Instalação de serviço, backups versionados e ações administrativas ainda não
+> fazem parte desta versão.
 
 ## Requisitos
 
@@ -39,10 +39,37 @@ Os binários são gerados em `bin/`:
 - `bin/hyprprofile`: CLI e TUI;
 - `bin/hyprprofile-session-launcher`: inicia o perfil ativo de modo seguro.
 
-Para instalar apenas a CLI no `GOBIN`/`GOPATH` ativo:
+Para instalar a CLI e o launcher no `GOBIN`/`GOPATH` ativo:
 
 ```bash
 make install
+```
+
+### Integração com o gerenciador de login
+
+Depois de instalar os dois binários, publique a sessão Wayland do HyprProfile:
+
+```bash
+sudo hyprprofile install-session
+```
+
+Isso cria `/usr/share/wayland-sessions/hyprprofile.desktop`. No próximo login,
+selecione **HyprProfile** no GDM, SDDM ou outro gerenciador compatível com
+entradas Wayland. A sessão chama sempre `hyprprofile-session-launcher`, que lê o
+perfil previamente escolhido com `hyprprofile activate <id>`.
+
+Se o launcher não estiver no mesmo diretório da CLI nem no `PATH` usado por
+`sudo`, informe seu caminho absoluto:
+
+```bash
+sudo hyprprofile install-session \
+  --launcher /usr/local/bin/hyprprofile-session-launcher
+```
+
+Para remover somente a entrada do gerenciador de login:
+
+```bash
+sudo hyprprofile uninstall-session
 ```
 
 ## Começo rápido
@@ -80,6 +107,8 @@ navegar, `r` para atualizar e `q` ou `Ctrl+C` para sair.
 | `remove <id>` | Move um perfil inativo para a lixeira da aplicação. |
 | `restore <id>` | Restaura um perfil da lixeira. |
 | `doctor` | Verifica os diretórios da aplicação e executáveis esperados. |
+| `install-session` | Instala a entrada Wayland usada pelo gerenciador de login. |
+| `uninstall-session` | Remove a entrada Wayland instalada pela aplicação. |
 
 Use `bin/hyprprofile help` para consultar a ajuda integrada.
 
