@@ -47,29 +47,54 @@ make install
 
 ### Integração com o gerenciador de login
 
-Depois de instalar os dois binários, publique a sessão Wayland do HyprProfile:
+O `make install` usa o `GOBIN`/`GOPATH` do usuário e é conveniente para uso no
+terminal, mas esse diretório pode não estar acessível no `PATH` administrativo.
+Para uma instalação reconhecida pelo GDM ou SDDM, compile e instale os dois
+binários em um caminho de sistema:
 
 ```bash
-sudo hyprprofile install-session
-```
+make all
 
-Isso cria `/usr/share/wayland-sessions/hyprprofile.desktop`. No próximo login,
-selecione **HyprProfile** no GDM, SDDM ou outro gerenciador compatível com
-entradas Wayland. A sessão chama sempre `hyprprofile-session-launcher`, que lê o
-perfil previamente escolhido com `hyprprofile activate <id>`.
+sudo install -m 0755 \
+  bin/hyprprofile \
+  bin/hyprprofile-session-launcher \
+  /usr/local/bin/
 
-Se o launcher não estiver no mesmo diretório da CLI nem no `PATH` usado por
-`sudo`, informe seu caminho absoluto:
-
-```bash
-sudo hyprprofile install-session \
+sudo /usr/local/bin/hyprprofile install-session \
   --launcher /usr/local/bin/hyprprofile-session-launcher
 ```
 
-Para remover somente a entrada do gerenciador de login:
+O último comando cria `/usr/share/wayland-sessions/hyprprofile.desktop`. Em
+sistemas com SELinux, como Fedora, restaure os contextos dos arquivos:
 
 ```bash
-sudo hyprprofile uninstall-session
+sudo restorecon -v \
+  /usr/local/bin/hyprprofile \
+  /usr/local/bin/hyprprofile-session-launcher \
+  /usr/share/wayland-sessions/hyprprofile.desktop
+```
+
+Confira a entrada instalada antes de encerrar a sessão:
+
+```bash
+cat /usr/share/wayland-sessions/hyprprofile.desktop
+```
+
+Escolha o perfil que será iniciado:
+
+```bash
+/usr/local/bin/hyprprofile activate pessoal
+```
+
+Depois, encerre completamente a sessão atual e selecione **HyprProfile** no
+GDM, SDDM ou outro gerenciador compatível com entradas Wayland.
+
+A entrada do display manager chama sempre `hyprprofile-session-launcher`, que
+lê o perfil ativo e valida sua configuração antes de iniciar o Hyprland. Para
+remover somente essa entrada, mantendo os perfis e os binários:
+
+```bash
+sudo /usr/local/bin/hyprprofile uninstall-session
 ```
 
 ## Começo rápido
