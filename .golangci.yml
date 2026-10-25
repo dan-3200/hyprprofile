@@ -1,0 +1,141 @@
+# yaml-language-server: $schema=https://json.schemastore.org/golangci-lint.json
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+  relative-path-mode: gomod
+
+linters:
+  default: standard
+  enable:
+    - asciicheck
+    - bidichk
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - dupl
+    - durationcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocognit
+    - gocritic
+    - gosec
+    - iface
+    - interfacebloat
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - nolintlint
+    - predeclared
+    - reassign
+    - recvcheck
+    - revive
+    - sloglint
+    - testableexamples
+    - testifylint
+    - thelper
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+    - whitespace
+    - wrapcheck
+  settings:
+    copyloopvar:
+      check-alias: true
+    cyclop:
+      # Bubble Tea Update functions grow easily; keep them reviewable without
+      # penalizing normal command dispatch and state transitions.
+      max-complexity: 20
+    dupl:
+      threshold: 120
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocognit:
+      min-complexity: 25
+    gocritic:
+      enabled-checks:
+        - deferInLoop
+        - dynamicFmtString
+        - externalErrorReassign
+        - filepathJoin
+        - preferFilepathJoin
+        - truncateCmp
+        - uncheckedInlineErr
+    govet:
+      enable:
+        - nilness
+        - shadow
+        - unusedwrite
+        - waitgroup
+    iface:
+      enable:
+        - identical
+        - opaque
+        - unexported
+        - unused
+        - unusedmethod
+    interfacebloat:
+      max: 5
+    maintidx:
+      under: 20
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      enable-default-rules: true
+      rules:
+        # os.Exit/log.Fatal below main can skip deferred cleanup during an
+        # atomic profile operation.
+        - name: deep-exit
+        - name: datarace
+        - name: file-length-limit
+          arguments:
+            - max: 280
+              skip-comments: false
+              skip-blank-lines: false
+  exclusions:
+    generated: strict
+    # Some test-only security exclusions are intentionally dormant until a
+    # matching fixture exists, so they must not produce warnings on clean runs.
+    warn-unused: false
+    presets:
+      - common-false-positives
+      - std-error-handling
+    rules:
+      # Tests intentionally launch fake binaries and operate on temporary
+      # user-controlled paths. Keep every other gosec rule active in tests.
+      - path: _test\.go
+        text: "G204|G304|G306"
+        linters:
+          - gosec
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+output:
+  sort-order:
+    - file
+    - linter

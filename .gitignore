@@ -1,0 +1,14 @@
+# Build and test artifacts
+/bin/
+/coverage.out
+
+# Locally installed development tools
+/.cache/
+/.tools/
+
+# Editor and operating-system files
+/.idea/
+/.vscode/
+*.swp
+*~
+.DS_Store
