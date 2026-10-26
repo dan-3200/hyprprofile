@@ -137,6 +137,21 @@ navegar, `g`/`Home` e `G`/`End` para ir aos extremos, `Enter` para selecionar
 o perfil para o próximo login, `h` ou `?` para ajuda e
 `q` ou `Ctrl+C` para sair. O painel mostra os detalhes do perfil selecionado.
 
+### GUI GNOME no Fedora
+
+A interface gráfica usa GTK 4 e libadwaita e mostra a lista de perfis, seus
+detalhes e a ação de seleção para o próximo login. Instale as dependências de
+desenvolvimento e compile o binário:
+
+```bash
+sudo dnf install gtk4-devel libadwaita-devel gobject-introspection-devel appstream-devel
+make build-gui
+bin/hyprprofile-gui
+```
+
+O binário comum não depende de bibliotecas gráficas. A GUI é incluída somente
+no alvo `build-gui`.
+
 ## Comandos
 
 | Comando | Descrição |
