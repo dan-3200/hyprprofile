@@ -1,5 +1,5 @@
-// Package dto defines application inputs and results shared with user interfaces.
-package dto
+// Package profiles groups profile-related application use cases and contracts.
+package profiles
 
 import "github.com/dan-3200/hyprprofile/internal/domain/profile"
 
@@ -27,16 +27,4 @@ type ImportProfileInput struct {
 // ArchiveResult identifies the recoverable location of a removed profile.
 type ArchiveResult struct {
 	ID, Destination string
-}
-
-// CommandStatus describes whether a diagnostic executable is available.
-type CommandStatus struct {
-	Name      string
-	Available bool
-}
-
-// LaunchPlan is the validated process invocation for a Hyprland session.
-type LaunchPlan struct {
-	Executable string
-	Arguments  []string
 }

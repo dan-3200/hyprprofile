@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
-	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	profileapp "github.com/dan-3200/hyprprofile/internal/application/profiles"
+	systemapp "github.com/dan-3200/hyprprofile/internal/application/system"
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
 )
 
 // Run executes a CLI command using the supplied application services.
-func Run(arguments []string, profiles *app.ProfileService, system *app.SystemService, sessionDirectory string) error {
+func Run(arguments []string, profiles *profileapp.ProfileService, system *systemapp.Service, sessionDirectory string) error {
 	if len(arguments) == 0 {
 		return errors.New("a command is required")
 	}
@@ -52,7 +52,7 @@ func Run(arguments []string, profiles *app.ProfileService, system *app.SystemSer
 	}
 }
 
-func listProfiles(profiles *app.ProfileService) error {
+func listProfiles(profiles *profileapp.ProfileService) error {
 	items, err := profiles.ListProfiles()
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -67,7 +67,7 @@ func listProfiles(profiles *app.ProfileService) error {
 	return nil
 }
 
-func showStatus(profiles *app.ProfileService) error {
+func showStatus(profiles *profileapp.ProfileService) error {
 	item, selected, err := profiles.Status()
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -80,7 +80,7 @@ func showStatus(profiles *app.ProfileService) error {
 	return nil
 }
 
-func createProfile(arguments []string, profiles *app.ProfileService) error {
+func createProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) == 0 {
 		return errors.New("usage: create <id> --name <name> [--template <template>]")
 	}
@@ -95,7 +95,7 @@ func createProfile(arguments []string, profiles *app.ProfileService) error {
 	if flags.NArg() != 0 {
 		return errors.New("usage: create <id> --name <name> [--template <template>]")
 	}
-	manifest, err := profiles.CreateProfile(dto.CreateProfileInput{ID: arguments[0], Name: *name, Description: *description, Template: *templateName})
+	manifest, err := profiles.CreateProfile(profileapp.CreateProfileInput{ID: arguments[0], Name: *name, Description: *description, Template: *templateName})
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -103,7 +103,7 @@ func createProfile(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func listTemplates(arguments []string, profiles *app.ProfileService) error {
+func listTemplates(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) != 0 {
 		return errors.New("usage: templates")
 	}
@@ -117,7 +117,7 @@ func listTemplates(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func cloneProfile(arguments []string, profiles *app.ProfileService) error {
+func cloneProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) < 2 {
 		return errors.New("usage: clone <source-id> <new-id> --name <name>")
 	}
@@ -127,7 +127,7 @@ func cloneProfile(arguments []string, profiles *app.ProfileService) error {
 	if err := flags.Parse(arguments[2:]); err != nil {
 		return fmt.Errorf("parse clone flags: %w", err)
 	}
-	target, err := profiles.CloneProfile(dto.CloneProfileInput{SourceID: arguments[0], ID: arguments[1], Name: *name})
+	target, err := profiles.CloneProfile(profileapp.CloneProfileInput{SourceID: arguments[0], ID: arguments[1], Name: *name})
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

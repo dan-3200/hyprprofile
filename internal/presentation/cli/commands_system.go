@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	systemapp "github.com/dan-3200/hyprprofile/internal/application/system"
 )
 
-func doctor(system *app.SystemService) error {
+func doctor(system *systemapp.Service) error {
 	report, err := system.Doctor()
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -24,7 +24,7 @@ func doctor(system *app.SystemService) error {
 	return nil
 }
 
-func installSession(arguments []string, system *app.SystemService, sessionDirectory string) error {
+func installSession(arguments []string, system *systemapp.Service, sessionDirectory string) error {
 	flags := flag.NewFlagSet("install-session", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	directory := flags.String("directory", sessionDirectory, "Wayland session directory")
@@ -43,7 +43,7 @@ func installSession(arguments []string, system *app.SystemService, sessionDirect
 	return nil
 }
 
-func uninstallSession(arguments []string, system *app.SystemService, sessionDirectory string) error {
+func uninstallSession(arguments []string, system *systemapp.Service, sessionDirectory string) error {
 	flags := flag.NewFlagSet("uninstall-session", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	directory := flags.String("directory", sessionDirectory, "Wayland session directory")

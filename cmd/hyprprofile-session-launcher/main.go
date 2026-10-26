@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/dan-3200/hyprprofile/internal/application/usecases"
+	launcherapp "github.com/dan-3200/hyprprofile/internal/application/launch"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
@@ -26,11 +26,11 @@ func launch() error {
 		return fmt.Errorf("resolve XDG paths: %w", err)
 	}
 	store := storage.New(paths)
-	plan, err := usecases.PrepareLaunch(store, session.NewManager(paths), inspection.DefaultInspector(), exec.LookPath)
+	plan, err := launcherapp.Prepare(store, session.NewManager(paths), inspection.DefaultInspector(), exec.LookPath)
 	if err != nil {
 		return fmt.Errorf("prepare Hyprland launch: %w", err)
 	}
-	// #nosec G204 -- PrepareLaunch resolves a fixed compositor executable and validates the entrypoint.
+	// #nosec G204 -- Prepare resolves a fixed compositor executable and validates the entrypoint.
 	if err := syscall.Exec(plan.Executable, plan.Arguments, os.Environ()); err != nil {
 		return fmt.Errorf("execute Hyprland: %w", err)
 	}

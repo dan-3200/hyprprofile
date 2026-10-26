@@ -7,7 +7,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
 )
 
 var (
@@ -22,19 +22,19 @@ var (
 
 type model struct {
 	profilesSource ProfileLister
-	profiles       []dto.ProfileListItem
+	profiles       []profiles.ProfileListItem
 	cursor         int
 	err            error
 }
 
 type loadedMessage struct {
-	profiles []dto.ProfileListItem
+	profiles []profiles.ProfileListItem
 	err      error
 }
 
 // ProfileLister provides the read model displayed in the dashboard.
 type ProfileLister interface {
-	ListProfiles() ([]dto.ProfileListItem, error)
+	ListProfiles() ([]profiles.ProfileListItem, error)
 }
 
 // Run opens the initial dashboard. CLI subcommands remain available for scripts.

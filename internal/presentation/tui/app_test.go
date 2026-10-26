@@ -5,23 +5,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
 )
 
 type fakeProfileLister struct {
 	calls int
-	items []dto.ProfileListItem
+	items []profiles.ProfileListItem
 }
 
-func (f *fakeProfileLister) ListProfiles() ([]dto.ProfileListItem, error) {
+func (f *fakeProfileLister) ListProfiles() ([]profiles.ProfileListItem, error) {
 	f.calls++
 	return f.items, nil
 }
 
 func TestDashboardLoadsAndRefreshesFromService(t *testing.T) {
 	item := profile.NewManifest("work", "Work", "", profile.DefaultEntrypoint, time.Now())
-	source := &fakeProfileLister{items: []dto.ProfileListItem{{Manifest: item, Active: true}}}
+	source := &fakeProfileLister{items: []profiles.ProfileListItem{{Manifest: item, Active: true}}}
 	dashboard := model{profilesSource: source}
 	loaded, ok := dashboard.Init()().(loadedMessage)
 	if !ok {

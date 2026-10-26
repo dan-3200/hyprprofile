@@ -235,10 +235,9 @@ comandos obrigatórios e datas de criação/atualização.
 
 - `internal/domain/profile`: identidade, manifesto, metadados de template e
   regras que não acessam o sistema operacional;
-- `internal/application/dto`: entradas e resultados dos casos de uso;
-- `internal/application/ports`: interfaces exigidas pela aplicação;
-- `internal/application/usecases`: criação, validação, ativação e preparação
-  de sessão;
+- `internal/application/{profiles,system,launch}`: fatias de criação,
+  validação, ativação, integração de sessão e lançamento. Cada fatia reúne
+  seus casos de uso, DTOs e portas;
 - `internal/infrastructure`: TOML e XDG, arquivos dos perfis, templates
   incorporados, inspeção do ambiente e entrada Wayland;
 - `internal/presentation/{cli,tui}`: interfaces de terminal que consomem a aplicação;
@@ -249,9 +248,9 @@ da CLI e da TUI continuam definidas nas respectivas interfaces. Para traduzir
 também os diagnósticos, os erros hoje apresentados como texto precisarão de
 códigos estruturados e formatação na camada de apresentação.
 
-O domínio não importa aplicação nem infraestrutura. `dto` e `ports` dependem
-apenas do domínio; `usecases` depende deles e recebe os adaptadores de
-infraestrutura nos executáveis.
+O domínio não importa aplicação nem infraestrutura. Cada fatia da aplicação
+depende apenas do domínio e recebe os adaptadores de infraestrutura nos
+executáveis.
 
 ```bash
 make fmt         # formata o código

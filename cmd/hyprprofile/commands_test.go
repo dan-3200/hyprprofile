@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
+	"github.com/dan-3200/hyprprofile/internal/application/system"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
@@ -26,8 +27,8 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := storage.New(paths)
-	profiles := app.NewProfileService(store, store, session.NewManager(paths), inspection.DefaultInspector(), templates.Catalog{}, time.Now)
-	system := app.NewSystemService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
+	profiles := profiles.NewProfileService(store, store, session.NewManager(paths), inspection.DefaultInspector(), templates.Catalog{}, time.Now)
+	system := system.NewService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
 	cases := []struct {
 		arguments []string
 		want      string
@@ -77,7 +78,7 @@ func TestCLIExitCodeOnMissingProfile(t *testing.T) {
 	}
 }
 
-func runError(arguments []string, profiles *app.ProfileService, system *app.SystemService) (string, error) {
+func runError(arguments []string, profiles *profiles.ProfileService, system *system.Service) (string, error) {
 	return capturedOutput(func() error { return cli.Run(arguments, profiles, system, session.DefaultSessionDirectory) })
 }
 

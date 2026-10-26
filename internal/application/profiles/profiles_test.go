@@ -1,4 +1,4 @@
-package usecases
+package profiles
 
 import (
 	"os"
@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
@@ -29,11 +28,11 @@ func TestProfileServiceLifecycle(t *testing.T) {
 	if status, selected, statusErr := service.Status(); statusErr != nil || selected {
 		t.Fatalf("initial status = %v, %v, %v", status, selected, statusErr)
 	}
-	created, err := service.CreateProfile(dto.CreateProfileInput{ID: "first", Name: "First"})
+	created, err := service.CreateProfile(CreateProfileInput{ID: "first", Name: "First"})
 	if err != nil || created.Template != profile.DefaultTemplate || !created.CreatedAt.Equal(stamp) || created.DirectoryID() != "first" || created.ID == "first" || created.FormatVersion != profile.CurrentFormat {
 		t.Fatalf("create = %+v, %v", created, err)
 	}
-	cloned, err := service.CloneProfile(dto.CloneProfileInput{SourceID: "first", ID: "second"})
+	cloned, err := service.CloneProfile(CloneProfileInput{SourceID: "first", ID: "second"})
 	if err != nil || cloned.Name != "First (clone)" || cloned.Origin != "first" || cloned.ID == created.ID || cloned.DirectoryID() != "second" {
 		t.Fatalf("clone = %+v, %v", cloned, err)
 	}
@@ -76,7 +75,7 @@ func TestLegacyProfileCanActivateAndCloneIntoUUIDFormat(t *testing.T) {
 	if active, activeErr := selection.Get(); activeErr != nil || active != "legacy" {
 		t.Fatalf("active legacy slug = %q, %v", active, activeErr)
 	}
-	clone, err := service.CloneProfile(dto.CloneProfileInput{SourceID: "legacy", ID: "modern"})
+	clone, err := service.CloneProfile(CloneProfileInput{SourceID: "legacy", ID: "modern"})
 	if err != nil || clone.FormatVersion != profile.CurrentFormat || clone.DirectoryID() != "modern" || clone.ID == "legacy" {
 		t.Fatalf("clone legacy = %+v, %v", clone, err)
 	}
@@ -118,7 +117,7 @@ func TestProfileServiceImportAndValidation(t *testing.T) {
 	if writeErr := os.WriteFile(filepath.Join(source, "hyprland.lua"), []byte("-- config\n"), 0o600); writeErr != nil {
 		t.Fatal(writeErr)
 	}
-	imported, err := service.ImportProfile(dto.ImportProfileInput{Source: source, ID: "imported"})
+	imported, err := service.ImportProfile(ImportProfileInput{Source: source, ID: "imported"})
 	if err != nil || imported.Name != "imported" || imported.Origin != source || imported.Entrypoint != "hyprland.lua" || imported.DirectoryID() != "imported" {
 		t.Fatalf("import = %+v, %v", imported, err)
 	}

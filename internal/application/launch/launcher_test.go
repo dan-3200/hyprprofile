@@ -1,4 +1,4 @@
-package usecases
+package launch
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
 )
 
-func TestPrepareLaunchUsesStartHyprland(t *testing.T) {
+func TestPrepareUsesStartHyprland(t *testing.T) {
 	root := t.TempDir()
 	paths, err := storage.NewPaths(filepath.Join(root, "config"), filepath.Join(root, "state"))
 	if err != nil {
@@ -34,7 +34,7 @@ func TestPrepareLaunchUsesStartHyprland(t *testing.T) {
 		}
 		return "", fmt.Errorf("%s unavailable", command)
 	}
-	plan, err := PrepareLaunch(store, manager, inspection.DefaultInspector(), lookup)
+	plan, err := Prepare(store, manager, inspection.DefaultInspector(), lookup)
 	if err != nil {
 		t.Fatalf("prepareLaunch() error = %v", err)
 	}
@@ -47,7 +47,7 @@ func TestPrepareLaunchUsesStartHyprland(t *testing.T) {
 	if err := os.Remove(filepath.Join(paths.ProfilesDir, manifest.DirectoryID(), manifest.Entrypoint)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PrepareLaunch(store, manager, inspection.DefaultInspector(), lookup); err == nil {
+	if _, err := Prepare(store, manager, inspection.DefaultInspector(), lookup); err == nil {
 		t.Fatal("launcher accepted a missing active configuration")
 	}
 }

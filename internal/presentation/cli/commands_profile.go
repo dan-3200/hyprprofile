@@ -7,11 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
-	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	profileapp "github.com/dan-3200/hyprprofile/internal/application/profiles"
 )
 
-func importProfile(arguments []string, profiles *app.ProfileService) error {
+func importProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) < 2 {
 		return errors.New("usage: import <absolute-directory> <id> --name <name>")
 	}
@@ -26,7 +25,7 @@ func importProfile(arguments []string, profiles *app.ProfileService) error {
 	if !filepath.IsAbs(arguments[0]) {
 		return errors.New("import source must be an absolute directory")
 	}
-	manifest, err := profiles.ImportProfile(dto.ImportProfileInput{
+	manifest, err := profiles.ImportProfile(profileapp.ImportProfileInput{
 		Source: arguments[0], ID: arguments[1], Name: *name, Description: *description, Entrypoint: *entrypoint,
 	})
 	if err != nil {
@@ -36,7 +35,7 @@ func importProfile(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func validateProfile(arguments []string, profiles *app.ProfileService) error {
+func validateProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: validate <id>")
 	}
@@ -56,7 +55,7 @@ func validateProfile(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func activateProfile(arguments []string, profiles *app.ProfileService) error {
+func activateProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: activate <id>")
 	}
@@ -68,7 +67,7 @@ func activateProfile(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func removeProfile(arguments []string, profiles *app.ProfileService) error {
+func removeProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: remove <id>")
 	}
@@ -80,7 +79,7 @@ func removeProfile(arguments []string, profiles *app.ProfileService) error {
 	return nil
 }
 
-func restoreProfile(arguments []string, profiles *app.ProfileService) error {
+func restoreProfile(arguments []string, profiles *profileapp.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: restore <id>")
 	}

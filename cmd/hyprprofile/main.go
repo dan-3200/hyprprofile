@@ -7,7 +7,8 @@ import (
 	"os/exec"
 	"time"
 
-	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
+	"github.com/dan-3200/hyprprofile/internal/application/system"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
@@ -30,8 +31,8 @@ func mainError() error {
 	}
 	store := storage.New(paths)
 	manager := session.NewManager(paths)
-	profiles := app.NewProfileService(store, store, manager, inspection.DefaultInspector(), templates.Catalog{}, time.Now)
-	system := app.NewSystemService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
+	profiles := profiles.NewProfileService(store, store, manager, inspection.DefaultInspector(), templates.Catalog{}, time.Now)
+	system := system.NewService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
 
 	if len(os.Args) == 1 {
 		if err := tui.Run(profiles); err != nil {

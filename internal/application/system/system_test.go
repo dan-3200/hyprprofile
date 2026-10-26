@@ -1,4 +1,4 @@
-package usecases
+package system
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ func TestSystemServiceDoctorAndSessionEntry(t *testing.T) {
 		return "", errors.New("missing")
 	}
 	resolver := session.LauncherResolver{Lookup: lookup, Executable: func() (string, error) { return filepath.Join(root, "hyprprofile"), nil }}
-	service := NewSystemService(storage.New(paths), lookup, session.DesktopEntry{}, resolver)
+	service := NewService(storage.New(paths), lookup, session.DesktopEntry{}, resolver)
 	report, err := service.Doctor()
 	if err != nil || len(report) != 3 || !report[0].Available || report[1].Available || report[2].Available {
 		t.Fatalf("doctor = %+v, %v", report, err)

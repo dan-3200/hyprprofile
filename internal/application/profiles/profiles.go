@@ -1,33 +1,30 @@
-// Package usecases coordinates profile and system operations for user interfaces.
-package usecases
+package profiles
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/application/dto"
-	"github.com/dan-3200/hyprprofile/internal/application/ports"
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
 )
 
 // ProfileService coordinates profile operations for any local UI.
 type ProfileService struct {
-	reader    ports.ProfileReader
-	writer    ports.ProfileWriter
-	active    ports.ActiveSelection
-	inspector ports.ProfileInspector
-	templates ports.TemplateCatalog
+	reader    Reader
+	writer    Writer
+	active    ActiveSelection
+	inspector Inspector
+	templates TemplateCatalog
 	now       func() time.Time
 }
 
 // NewProfileService wires profile storage, selection and a clock.
-func NewProfileService(reader ports.ProfileReader, writer ports.ProfileWriter, active ports.ActiveSelection, inspector ports.ProfileInspector, templates ports.TemplateCatalog, now func() time.Time) *ProfileService {
+func NewProfileService(reader Reader, writer Writer, active ActiveSelection, inspector Inspector, templates TemplateCatalog, now func() time.Time) *ProfileService {
 	return &ProfileService{reader: reader, writer: writer, active: active, inspector: inspector, templates: templates, now: now}
 }
 
 // ListProfiles returns profiles in storage order with the selected profile marked.
-func (s *ProfileService) ListProfiles() ([]dto.ProfileListItem, error) {
+func (s *ProfileService) ListProfiles() ([]ProfileListItem, error) {
 	items, err := s.reader.List()
 	if err != nil {
 		return nil, fmt.Errorf("list profiles: %w", err)
@@ -36,9 +33,9 @@ func (s *ProfileService) ListProfiles() ([]dto.ProfileListItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read active profile: %w", err)
 	}
-	result := make([]dto.ProfileListItem, len(items))
+	result := make([]ProfileListItem, len(items))
 	for i, item := range items {
-		result[i] = dto.ProfileListItem{Manifest: item, Active: item.DirectoryID() == active}
+		result[i] = ProfileListItem{Manifest: item, Active: item.DirectoryID() == active}
 	}
 	return result, nil
 }
@@ -65,7 +62,7 @@ func (s *ProfileService) Templates() []profile.Template {
 }
 
 // CreateProfile creates a profile with application-level defaults.
-func (s *ProfileService) CreateProfile(input dto.CreateProfileInput) (profile.Manifest, error) {
+func (s *ProfileService) CreateProfile(input CreateProfileInput) (profile.Manifest, error) {
 	if input.Template == "" {
 		input.Template = profile.DefaultTemplate
 	}
@@ -78,7 +75,7 @@ func (s *ProfileService) CreateProfile(input dto.CreateProfileInput) (profile.Ma
 }
 
 // CloneProfile duplicates a stored profile and updates its identity.
-func (s *ProfileService) CloneProfile(input dto.CloneProfileInput) (profile.Manifest, error) {
+func (s *ProfileService) CloneProfile(input CloneProfileInput) (profile.Manifest, error) {
 	source, err := s.reader.Load(input.SourceID)
 	if err != nil {
 		return profile.Manifest{}, fmt.Errorf("load source profile: %w", err)
@@ -100,7 +97,7 @@ func (s *ProfileService) CloneProfile(input dto.CloneProfileInput) (profile.Mani
 }
 
 // ImportProfile copies a local configuration with entrypoint detection when omitted.
-func (s *ProfileService) ImportProfile(input dto.ImportProfileInput) (profile.Manifest, error) {
+func (s *ProfileService) ImportProfile(input ImportProfileInput) (profile.Manifest, error) {
 	if input.Name == "" {
 		input.Name = input.ID
 	}
@@ -152,19 +149,19 @@ func (s *ProfileService) ActivateProfile(id string) (profile.Manifest, error) {
 }
 
 // ArchiveProfile moves an inactive profile to recoverable storage.
-func (s *ProfileService) ArchiveProfile(id string) (dto.ArchiveResult, error) {
+func (s *ProfileService) ArchiveProfile(id string) (ArchiveResult, error) {
 	active, err := s.active.Get()
 	if err != nil {
-		return dto.ArchiveResult{}, fmt.Errorf("read active profile: %w", err)
+		return ArchiveResult{}, fmt.Errorf("read active profile: %w", err)
 	}
 	if id == active {
-		return dto.ArchiveResult{}, errors.New("cannot remove the active profile; activate another profile first")
+		return ArchiveResult{}, errors.New("cannot remove the active profile; activate another profile first")
 	}
 	destination, err := s.writer.Archive(id)
 	if err != nil {
-		return dto.ArchiveResult{}, fmt.Errorf("archive profile: %w", err)
+		return ArchiveResult{}, fmt.Errorf("archive profile: %w", err)
 	}
-	return dto.ArchiveResult{ID: id, Destination: destination}, nil
+	return ArchiveResult{ID: id, Destination: destination}, nil
 }
 
 // RestoreProfile restores the latest archived profile with the ID.
