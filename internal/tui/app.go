@@ -7,9 +7,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/dan-3200/hyprprofile/internal/profile"
-	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
+	"github.com/dan-3200/hyprprofile/internal/app"
 )
 
 var (
@@ -23,23 +21,25 @@ var (
 )
 
 type model struct {
-	store    *storage.Store
-	manager  session.Manager
-	profiles []profile.Manifest
-	active   string
-	cursor   int
-	err      error
+	profilesSource ProfileLister
+	profiles       []app.ProfileListItem
+	cursor         int
+	err            error
 }
 
 type loadedMessage struct {
-	profiles []profile.Manifest
-	active   string
+	profiles []app.ProfileListItem
 	err      error
 }
 
+// ProfileLister provides the read model displayed in the dashboard.
+type ProfileLister interface {
+	ListProfiles() ([]app.ProfileListItem, error)
+}
+
 // Run opens the initial dashboard. CLI subcommands remain available for scripts.
-func Run(store *storage.Store, manager session.Manager) error {
-	program := tea.NewProgram(model{store: store, manager: manager})
+func Run(profiles ProfileLister) error {
+	program := tea.NewProgram(model{profilesSource: profiles})
 	_, err := program.Run()
 	if err != nil {
 		return fmt.Errorf("run terminal interface: %w", err)
@@ -55,7 +55,6 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message := message.(type) {
 	case loadedMessage:
 		m.profiles = message.profiles
-		m.active = message.active
 		m.err = message.err
 		if m.cursor >= len(m.profiles) {
 			m.cursor = max(0, len(m.profiles)-1)
@@ -90,8 +89,8 @@ func (m model) View() tea.View {
 			if index == m.cursor {
 				prefix = selectedMark
 			}
-			label := fmt.Sprintf("%s (%s)", item.Name, item.ID)
-			if item.ID == m.active {
+			label := fmt.Sprintf("%s (%s)", item.Manifest.Name, item.Manifest.ID)
+			if item.Active {
 				label = activeStyle.Render(label + "  ativo")
 			}
 			lines = append(lines, prefix+label)
@@ -102,10 +101,6 @@ func (m model) View() tea.View {
 }
 
 func (m model) load() tea.Msg {
-	profiles, err := m.store.List()
-	if err != nil {
-		return loadedMessage{err: err}
-	}
-	active, err := m.manager.Get()
-	return loadedMessage{profiles: profiles, active: active, err: err}
+	profiles, err := m.profilesSource.ListProfiles()
+	return loadedMessage{profiles: profiles, err: err}
 }

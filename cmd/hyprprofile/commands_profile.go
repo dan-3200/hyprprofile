@@ -6,15 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/profile"
-	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
-	"github.com/dan-3200/hyprprofile/internal/validation"
+	"github.com/dan-3200/hyprprofile/internal/app"
 )
 
-func importProfile(arguments []string, store *storage.Store) error {
+func importProfile(arguments []string, profiles *app.ProfileService) error {
 	if len(arguments) < 2 {
 		return errors.New("usage: import <absolute-directory> <id> --name <name>")
 	}
@@ -29,36 +25,26 @@ func importProfile(arguments []string, store *storage.Store) error {
 	if !filepath.IsAbs(arguments[0]) {
 		return errors.New("import source must be an absolute directory")
 	}
-	if *name == "" {
-		*name = arguments[1]
-	}
-	manifest := profile.NewManifest(arguments[1], *name, *description, *entrypoint, time.Now())
-	if *entrypoint == "" {
-		manifest.Entrypoint = ""
-	}
-	manifest.Origin = arguments[0]
-	if err := store.Import(arguments[0], manifest); err != nil {
-		return fmt.Errorf("import profile: %w", err)
+	manifest, err := profiles.ImportProfile(app.ImportProfileInput{
+		Source: arguments[0], ID: arguments[1], Name: *name, Description: *description, Entrypoint: *entrypoint,
+	})
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
 	fmt.Printf("Imported profile %q\n", manifest.ID)
 	return nil
 }
 
-func validateProfile(arguments []string, store *storage.Store) error {
+func validateProfile(arguments []string, profiles *app.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: validate <id>")
 	}
-	manifest, err := store.Load(arguments[0])
+	result, err := profiles.ValidateProfile(arguments[0])
 	if err != nil {
-		return fmt.Errorf("load profile: %w", err)
+		return fmt.Errorf("%w", err)
 	}
-	directory, err := store.ProfilePath(manifest.ID)
-	if err != nil {
-		return fmt.Errorf("resolve profile path: %w", err)
-	}
-	result := validation.ValidateProfile(directory, manifest, true)
 	if result.Valid() {
-		fmt.Printf("Profile %q is valid\n", manifest.ID)
+		fmt.Printf("Profile %q is valid\n", arguments[0])
 	}
 	for _, issue := range result.Issues {
 		fmt.Printf("%s: %s\n", issue.Severity, issue.Message)
@@ -69,53 +55,36 @@ func validateProfile(arguments []string, store *storage.Store) error {
 	return nil
 }
 
-func activateProfile(arguments []string, store *storage.Store, manager session.Manager) error {
+func activateProfile(arguments []string, profiles *app.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: activate <id>")
 	}
-	manifest, err := store.Load(arguments[0])
+	manifest, err := profiles.ActivateProfile(arguments[0])
 	if err != nil {
-		return fmt.Errorf("load profile: %w", err)
-	}
-	directory, err := store.ProfilePath(manifest.ID)
-	if err != nil {
-		return fmt.Errorf("resolve profile path: %w", err)
-	}
-	if result := validation.ValidateProfile(directory, manifest, true); !result.Valid() {
-		return errors.New("cannot activate an invalid profile; run validate for details")
-	}
-	if err := manager.Activate(store, manifest.ID); err != nil {
-		return fmt.Errorf("activate profile: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	fmt.Printf("Activated profile %q for the next login\n", manifest.ID)
 	return nil
 }
 
-func removeProfile(arguments []string, store *storage.Store, manager session.Manager) error {
+func removeProfile(arguments []string, profiles *app.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: remove <id>")
 	}
-	active, err := manager.Get()
+	result, err := profiles.ArchiveProfile(arguments[0])
 	if err != nil {
-		return fmt.Errorf("read active profile: %w", err)
+		return fmt.Errorf("%w", err)
 	}
-	if arguments[0] == active {
-		return errors.New("cannot remove the active profile; activate another profile first")
-	}
-	destination, err := store.Archive(arguments[0])
-	if err != nil {
-		return fmt.Errorf("archive profile: %w", err)
-	}
-	fmt.Printf("Archived profile %q to %s\n", arguments[0], destination)
+	fmt.Printf("Archived profile %q to %s\n", result.ID, result.Destination)
 	return nil
 }
 
-func restoreProfile(arguments []string, store *storage.Store) error {
+func restoreProfile(arguments []string, profiles *app.ProfileService) error {
 	if len(arguments) != 1 {
 		return errors.New("usage: restore <id>")
 	}
-	if err := store.Restore(arguments[0]); err != nil {
-		return fmt.Errorf("restore profile: %w", err)
+	if err := profiles.RestoreProfile(arguments[0]); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 	fmt.Printf("Restored profile %q\n", arguments[0])
 	return nil

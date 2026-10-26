@@ -22,8 +22,8 @@ func TestPrepareLaunchUsesStartHyprland(t *testing.T) {
 		t.Fatalf("Create() error = %v", createErr)
 	}
 	manager := NewManager(paths)
-	if activateErr := manager.Activate(store, manifest.ID); activateErr != nil {
-		t.Fatalf("Activate() error = %v", activateErr)
+	if activateErr := manager.Set(manifest.ID); activateErr != nil {
+		t.Fatalf("Set() error = %v", activateErr)
 	}
 	lookup := func(command string) (string, error) {
 		if command == "start-hyprland" {

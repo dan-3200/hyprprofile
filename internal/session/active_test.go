@@ -21,8 +21,8 @@ func TestActivateWritesAndReadsProfileID(t *testing.T) {
 		t.Fatalf("Create() error = %v", createErr)
 	}
 	manager := NewManager(paths)
-	if activateErr := manager.Activate(store, manifest.ID); activateErr != nil {
-		t.Fatalf("Activate() error = %v", activateErr)
+	if activateErr := manager.Set(manifest.ID); activateErr != nil {
+		t.Fatalf("Set() error = %v", activateErr)
 	}
 	active, err := manager.Get()
 	if err != nil {

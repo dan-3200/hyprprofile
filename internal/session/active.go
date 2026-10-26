@@ -37,10 +37,10 @@ func (m Manager) Get() (string, error) {
 	return id, nil
 }
 
-// Activate switches the session selector only after the profile is present.
-func (m Manager) Activate(store *storage.Store, id string) error {
-	if _, err := store.Load(id); err != nil {
-		return fmt.Errorf("load profile to activate: %w", err)
+// Set writes a profile ID selected and validated by the application service.
+func (m Manager) Set(id string) error {
+	if err := profile.ValidateID(id); err != nil {
+		return fmt.Errorf("validate active profile ID: %w", err)
 	}
 	if err := storage.WriteAtomicFile(m.paths.ActiveProfileFile, []byte(id+"\n")); err != nil {
 		return fmt.Errorf("write active profile: %w", err)

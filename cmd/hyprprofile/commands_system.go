@@ -5,28 +5,27 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 
+	"github.com/dan-3200/hyprprofile/internal/app"
 	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
 )
 
-func doctor(store *storage.Store) error {
-	if err := store.Ensure(); err != nil {
-		return fmt.Errorf("prepare profile storage: %w", err)
+func doctor(system *app.SystemService) error {
+	report, err := system.Doctor()
+	if err != nil {
+		return fmt.Errorf("%w", err)
 	}
-	for _, command := range []string{"Hyprland", "hyprctl", "start-hyprland"} {
-		if _, err := exec.LookPath(command); err != nil {
-			fmt.Printf("missing  %s\n", command)
+	for _, command := range report {
+		if !command.Available {
+			fmt.Printf("missing  %s\n", command.Name)
 			continue
 		}
-		fmt.Printf("available %s\n", command)
+		fmt.Printf("available %s\n", command.Name)
 	}
 	return nil
 }
 
-func installSession(arguments []string) error {
+func installSession(arguments []string, system *app.SystemService) error {
 	flags := flag.NewFlagSet("install-session", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	directory := flags.String("directory", session.DefaultSessionDirectory, "Wayland session directory")
@@ -37,19 +36,15 @@ func installSession(arguments []string) error {
 	if flags.NArg() != 0 {
 		return errors.New("usage: install-session [--launcher <absolute-path>] [--directory <absolute-path>]")
 	}
-	resolved, err := resolveSessionLauncher(*launcher)
+	destination, err := system.InstallSession(*directory, *launcher)
 	if err != nil {
-		return err
-	}
-	destination, err := session.InstallDesktopEntry(*directory, resolved)
-	if err != nil {
-		return fmt.Errorf("install Wayland session: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	fmt.Printf("Installed Wayland session at %s\n", destination)
 	return nil
 }
 
-func uninstallSession(arguments []string) error {
+func uninstallSession(arguments []string, system *app.SystemService) error {
 	flags := flag.NewFlagSet("uninstall-session", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	directory := flags.String("directory", session.DefaultSessionDirectory, "Wayland session directory")
@@ -59,37 +54,12 @@ func uninstallSession(arguments []string) error {
 	if flags.NArg() != 0 {
 		return errors.New("usage: uninstall-session [--directory <absolute-path>]")
 	}
-	destination, err := session.RemoveDesktopEntry(*directory)
+	destination, err := system.UninstallSession(*directory)
 	if err != nil {
-		return fmt.Errorf("uninstall Wayland session: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	fmt.Printf("Removed Wayland session at %s\n", destination)
 	return nil
-}
-
-func resolveSessionLauncher(explicit string) (string, error) {
-	if explicit != "" {
-		if !filepath.IsAbs(explicit) {
-			return "", errors.New("launcher path must be absolute")
-		}
-		return filepath.Clean(explicit), nil
-	}
-	current, err := os.Executable()
-	if err == nil {
-		sibling := filepath.Join(filepath.Dir(current), "hyprprofile-session-launcher")
-		if info, statErr := os.Stat(sibling); statErr == nil && info.Mode().IsRegular() && info.Mode()&0o111 != 0 {
-			return sibling, nil
-		}
-	}
-	launcher, err := exec.LookPath("hyprprofile-session-launcher")
-	if err != nil {
-		return "", errors.New("hyprprofile-session-launcher was not found; install it or use --launcher")
-	}
-	launcher, err = filepath.Abs(launcher)
-	if err != nil {
-		return "", fmt.Errorf("resolve launcher path: %w", err)
-	}
-	return launcher, nil
 }
 
 func printUsage() {
