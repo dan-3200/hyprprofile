@@ -17,12 +17,12 @@ func TestPrepareLaunchUsesStartHyprland(t *testing.T) {
 		t.Fatalf("NewPaths() error = %v", err)
 	}
 	store := storage.New(paths)
-	manifest := profile.NewManifest("minimal", "Minimal", "", profile.DefaultEntrypoint, time.Now())
+	manifest := profile.NewUUIDManifest("minimal", "Minimal", "", profile.DefaultEntrypoint, time.Now())
 	if createErr := store.Create(manifest); createErr != nil {
 		t.Fatalf("Create() error = %v", createErr)
 	}
 	manager := NewManager(paths)
-	if activateErr := manager.Set(manifest.ID); activateErr != nil {
+	if activateErr := manager.Set(manifest.DirectoryID()); activateErr != nil {
 		t.Fatalf("Set() error = %v", activateErr)
 	}
 	lookup := func(command string) (string, error) {

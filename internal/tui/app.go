@@ -89,7 +89,7 @@ func (m model) View() tea.View {
 			if index == m.cursor {
 				prefix = selectedMark
 			}
-			label := fmt.Sprintf("%s (%s)", item.Manifest.Name, item.Manifest.ID)
+			label := fmt.Sprintf("%s (%s)", item.Manifest.Name, item.Manifest.DirectoryID())
 			if item.Active {
 				label = activeStyle.Render(label + "  ativo")
 			}

@@ -3,6 +3,7 @@ package profile
 import (
 	"testing"
 	"time"
+	"uuid"
 )
 
 func TestValidateID(t *testing.T) {
@@ -47,5 +48,27 @@ func TestManifestRejectsUnsafeTemplateName(t *testing.T) {
 	manifest.Template = "../outside"
 	if err := manifest.Validate(); err == nil {
 		t.Fatal("Validate() unexpectedly accepted an unsafe template name")
+	}
+}
+
+func TestUUIDManifestIdentityAndLegacyCompatibility(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	modern := NewUUIDManifest("work", "Work", "", DefaultEntrypoint, now)
+	parsed, err := uuid.Parse(modern.ID)
+	if err != nil || modern.Validate() != nil || modern.DirectoryID() != "work" || parsed.String() != modern.ID || parsed[6]>>4 != 4 {
+		t.Fatalf("UUID manifest = %+v, %v", modern, err)
+	}
+	legacy := NewManifest("work", "Work", "", DefaultEntrypoint, now)
+	if err := legacy.Validate(); err != nil || legacy.DirectoryID() != "work" {
+		t.Fatalf("legacy manifest = %+v, %v", legacy, err)
+	}
+	modern.ID = "work"
+	if err := modern.Validate(); err == nil {
+		t.Fatal("new manifest accepted a non-UUID ID")
+	}
+	legacy.Slug = "different"
+	if err := legacy.Validate(); err == nil {
+		t.Fatal("legacy manifest accepted a second directory identity")
 	}
 }

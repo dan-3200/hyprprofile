@@ -59,7 +59,7 @@ func listProfiles(profiles *app.ProfileService) error {
 		if item.Active {
 			marker = "*"
 		}
-		fmt.Printf("%s %-20s %s\n", marker, item.Manifest.ID, item.Manifest.Name)
+		fmt.Printf("%s %-20s %s\n", marker, item.Manifest.DirectoryID(), item.Manifest.Name)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func showStatus(profiles *app.ProfileService) error {
 		fmt.Println("No active profile")
 		return nil
 	}
-	fmt.Printf("Active profile: %s (%s)\n", item.Name, item.ID)
+	fmt.Printf("Active profile: %s (%s)\n", item.Name, item.DirectoryID())
 	return nil
 }
 
@@ -96,7 +96,7 @@ func createProfile(arguments []string, profiles *app.ProfileService) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Printf("Created profile %q from template %q\n", manifest.ID, *templateName)
+	fmt.Printf("Created profile %q from template %q\n", manifest.DirectoryID(), *templateName)
 	return nil
 }
 
@@ -128,6 +128,6 @@ func cloneProfile(arguments []string, profiles *app.ProfileService) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Printf("Cloned %q as %q\n", arguments[0], target.ID)
+	fmt.Printf("Cloned %q as %q\n", arguments[0], target.DirectoryID())
 	return nil
 }

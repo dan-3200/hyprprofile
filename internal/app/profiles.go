@@ -83,7 +83,7 @@ func (s *ProfileService) ListProfiles() ([]ProfileListItem, error) {
 	}
 	result := make([]ProfileListItem, len(items))
 	for i, item := range items {
-		result[i] = ProfileListItem{Manifest: item, Active: item.ID == active}
+		result[i] = ProfileListItem{Manifest: item, Active: item.DirectoryID() == active}
 	}
 	return result, nil
 }
@@ -114,7 +114,7 @@ func (s *ProfileService) CreateProfile(input CreateProfileInput) (profile.Manife
 	if input.Template == "" {
 		input.Template = profile.DefaultTemplate
 	}
-	item := profile.NewManifest(input.ID, input.Name, input.Description, profile.DefaultEntrypoint, s.now())
+	item := profile.NewUUIDManifest(input.ID, input.Name, input.Description, profile.DefaultEntrypoint, s.now())
 	item.Template = input.Template
 	if err := s.writer.CreateFromTemplate(item, input.Template); err != nil {
 		return profile.Manifest{}, fmt.Errorf("create profile: %w", err)
@@ -132,11 +132,13 @@ func (s *ProfileService) CloneProfile(input CloneProfileInput) (profile.Manifest
 		input.Name = source.Name + " (clone)"
 	}
 	target := source
-	target.ID, target.Name = input.ID, input.Name
+	target.ID = profile.NewUUID()
+	target.FormatVersion = profile.CurrentFormat
+	target.Slug, target.Name = input.ID, input.Name
 	target.CreatedAt = s.now().UTC()
 	target.UpdatedAt = target.CreatedAt
-	target.Origin = source.ID
-	if err := s.writer.Clone(source.ID, target); err != nil {
+	target.Origin = source.DirectoryID()
+	if err := s.writer.Clone(source.DirectoryID(), target); err != nil {
 		return profile.Manifest{}, fmt.Errorf("clone profile: %w", err)
 	}
 	return target, nil
@@ -147,15 +149,15 @@ func (s *ProfileService) ImportProfile(input ImportProfileInput) (profile.Manife
 	if input.Name == "" {
 		input.Name = input.ID
 	}
-	item := profile.NewManifest(input.ID, input.Name, input.Description, input.Entrypoint, s.now())
+	item := profile.NewUUIDManifest(input.ID, input.Name, input.Description, input.Entrypoint, s.now())
 	if input.Entrypoint == "" {
 		item.Entrypoint = ""
 	}
 	item.Origin = input.Source
-	if err := s.writer.Import(input.Source, item); err != nil {
-		return profile.Manifest{}, fmt.Errorf("import profile: %w", err)
+	if importErr := s.writer.Import(input.Source, item); importErr != nil {
+		return profile.Manifest{}, fmt.Errorf("import profile: %w", importErr)
 	}
-	imported, err := s.reader.Load(item.ID)
+	imported, err := s.reader.Load(item.DirectoryID())
 	if err != nil {
 		return profile.Manifest{}, fmt.Errorf("load imported profile: %w", err)
 	}
@@ -168,7 +170,7 @@ func (s *ProfileService) ValidateProfile(id string) (validation.Result, error) {
 	if err != nil {
 		return validation.Result{}, fmt.Errorf("load profile: %w", err)
 	}
-	directory, err := s.reader.ProfilePath(item.ID)
+	directory, err := s.reader.ProfilePath(item.DirectoryID())
 	if err != nil {
 		return validation.Result{}, fmt.Errorf("resolve profile path: %w", err)
 	}
@@ -181,14 +183,14 @@ func (s *ProfileService) ActivateProfile(id string) (profile.Manifest, error) {
 	if err != nil {
 		return profile.Manifest{}, fmt.Errorf("load profile: %w", err)
 	}
-	directory, err := s.reader.ProfilePath(item.ID)
+	directory, err := s.reader.ProfilePath(item.DirectoryID())
 	if err != nil {
 		return profile.Manifest{}, fmt.Errorf("resolve profile path: %w", err)
 	}
 	if !validation.ValidateProfile(directory, item, true).Valid() {
 		return profile.Manifest{}, errors.New("cannot activate an invalid profile; run validate for details")
 	}
-	if err := s.active.Set(item.ID); err != nil {
+	if err := s.active.Set(item.DirectoryID()); err != nil {
 		return profile.Manifest{}, fmt.Errorf("activate profile: %w", err)
 	}
 	return item, nil

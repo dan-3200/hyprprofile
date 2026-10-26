@@ -37,7 +37,7 @@ func (s *Store) ProfilePath(id string) (string, error) {
 	return filepath.Join(s.Paths.ProfilesDir, id), nil
 }
 
-// List returns readable profile manifests ordered by immutable ID.
+// List returns readable profile manifests ordered by directory slug.
 func (s *Store) List() ([]profile.Manifest, error) {
 	if err := s.Ensure(); err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (s *Store) List() ([]profile.Manifest, error) {
 		}
 		manifests = append(manifests, manifest)
 	}
-	sort.Slice(manifests, func(i, j int) bool { return manifests[i].ID < manifests[j].ID })
+	sort.Slice(manifests, func(i, j int) bool { return manifests[i].DirectoryID() < manifests[j].DirectoryID() })
 	return manifests, nil
 }
 
@@ -84,8 +84,8 @@ func (s *Store) Load(id string) (profile.Manifest, error) {
 	if err := manifest.Validate(); err != nil {
 		return profile.Manifest{}, fmt.Errorf("validate manifest for %q: %w", id, err)
 	}
-	if manifest.ID != id {
-		return profile.Manifest{}, fmt.Errorf("manifest ID %q does not match directory %q", manifest.ID, id)
+	if manifest.DirectoryID() != id {
+		return profile.Manifest{}, fmt.Errorf("manifest directory ID %q does not match directory %q", manifest.DirectoryID(), id)
 	}
 	return manifest, nil
 }
@@ -113,12 +113,12 @@ func (s *Store) CreateFromTemplate(manifest profile.Manifest, templateName strin
 		return err
 	}
 
-	destination, err := s.ProfilePath(manifest.ID)
+	destination, err := s.ProfilePath(manifest.DirectoryID())
 	if err != nil {
 		return err
 	}
 	if _, statErr := os.Lstat(destination); statErr == nil {
-		return fmt.Errorf("profile %q already exists", manifest.ID)
+		return fmt.Errorf("profile %q already exists", manifest.DirectoryID())
 	} else if !errors.Is(statErr, fs.ErrNotExist) {
 		return fmt.Errorf("inspect destination: %w", statErr)
 	}

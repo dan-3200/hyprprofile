@@ -31,7 +31,7 @@ func importProfile(arguments []string, profiles *app.ProfileService) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Printf("Imported profile %q\n", manifest.ID)
+	fmt.Printf("Imported profile %q\n", manifest.DirectoryID())
 	return nil
 }
 
@@ -63,7 +63,7 @@ func activateProfile(arguments []string, profiles *app.ProfileService) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Printf("Activated profile %q for the next login\n", manifest.ID)
+	fmt.Printf("Activated profile %q for the next login\n", manifest.DirectoryID())
 	return nil
 }
 

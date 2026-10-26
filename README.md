@@ -16,7 +16,7 @@ depende de rede durante sua execução.
 ## Requisitos
 
 - Linux com Hyprland;
-- Go **1.26** ou mais recente para compilar;
+- Go **1.27** ou mais recente para compilar;
 - `make`;
 - `Hyprland` e, de preferência, `start-hyprland` disponíveis no `PATH` para
   iniciar uma sessão.
@@ -176,7 +176,8 @@ bin/hyprprofile validate jogos
 bin/hyprprofile activate jogos
 ```
 
-Os IDs aceitos seguem a expressão `[a-z0-9][a-z0-9-]{0,63}`. Por exemplo:
+Os identificadores usados nos comandos (slugs) seguem a expressão
+`[a-z0-9][a-z0-9-]{0,63}`. Por exemplo:
 `pessoal`, `notebook-trabalho` e `jogos-2026`.
 
 ## Estrutura de arquivos
@@ -184,7 +185,7 @@ Os IDs aceitos seguem a expressão `[a-z0-9][a-z0-9-]{0,63}`. Por exemplo:
 HyprProfile segue a especificação XDG:
 
 ```text
-$XDG_CONFIG_HOME/hypr-profiles/<id>/
+$XDG_CONFIG_HOME/hypr-profiles/<slug>/
 ├── .hyprprofile.toml
 └── hyprland.lua
 
@@ -199,8 +200,23 @@ Na ausência das variáveis XDG, os caminhos padrão são
 `~/.config` e `~/.local/state`. Os diretórios privados criados pela aplicação
 recebem permissão `0700`.
 
-O manifesto TOML registra a versão de formato, ID, nome, descrição, ponto de
-entrada, componentes, comandos obrigatórios e datas de criação/atualização.
+Perfis novos usam o formato 2: o campo `id` do manifesto é um UUID v4 e
+`slug` guarda o identificador usado nos comandos e no nome do diretório. Por
+exemplo, um perfil em `hypr-profiles/pessoal/` pode conter:
+
+```toml
+format_version = 2
+id = "550e8400-e29b-41d4-a716-446655440000"
+slug = "pessoal"
+```
+
+Manifestos antigos de formato 1 continuam válidos: neles, `id` é o nome do
+diretório. A leitura não altera esses arquivos. Ao clonar um perfil antigo,
+o clone recebe UUID e formato 2. O arquivo `active-profile` continua guardando
+o slug para que a próxima sessão encontre perfis dos dois formatos.
+
+O manifesto também registra nome, descrição, ponto de entrada, componentes,
+comandos obrigatórios e datas de criação/atualização.
 
 ## Segurança e integridade
 

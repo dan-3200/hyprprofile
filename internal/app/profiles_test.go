@@ -26,22 +26,15 @@ func TestProfileServiceLifecycle(t *testing.T) {
 	if status, selected, statusErr := service.Status(); statusErr != nil || selected {
 		t.Fatalf("initial status = %v, %v, %v", status, selected, statusErr)
 	}
-	if len(service.Templates()) == 0 {
-		t.Fatal("template catalog is empty")
-	}
 	created, err := service.CreateProfile(CreateProfileInput{ID: "first", Name: "First"})
-	if err != nil || created.Template != profile.DefaultTemplate || !created.CreatedAt.Equal(stamp) {
+	if err != nil || created.Template != profile.DefaultTemplate || !created.CreatedAt.Equal(stamp) || created.DirectoryID() != "first" || created.ID == "first" || created.FormatVersion != profile.CurrentFormat {
 		t.Fatalf("create = %+v, %v", created, err)
 	}
 	cloned, err := service.CloneProfile(CloneProfileInput{SourceID: "first", ID: "second"})
-	if err != nil || cloned.Name != "First (clone)" || cloned.Origin != "first" {
+	if err != nil || cloned.Name != "First (clone)" || cloned.Origin != "first" || cloned.ID == created.ID || cloned.DirectoryID() != "second" {
 		t.Fatalf("clone = %+v, %v", cloned, err)
 	}
-	t.Setenv("PATH", t.TempDir())
-	validationResult, err := service.ValidateProfile("first")
-	if err != nil || !validationResult.Valid() || len(validationResult.Issues) == 0 {
-		t.Fatalf("missing command warnings = %+v, %v", validationResult, err)
-	}
+	assertWarningsDoNotBlock(t, service)
 	if _, activateErr := service.ActivateProfile("first"); activateErr != nil {
 		t.Fatalf("activate = %v", activateErr)
 	}
@@ -50,6 +43,43 @@ func TestProfileServiceLifecycle(t *testing.T) {
 		t.Fatalf("list = %+v, %v", items, err)
 	}
 	assertArchiveAndRestore(t, service)
+}
+
+func assertWarningsDoNotBlock(t *testing.T, service *ProfileService) {
+	t.Helper()
+	t.Setenv("PATH", t.TempDir())
+	validationResult, err := service.ValidateProfile("first")
+	if err != nil || !validationResult.Valid() || len(validationResult.Issues) == 0 {
+		t.Fatalf("missing command warnings = %+v, %v", validationResult, err)
+	}
+}
+
+func TestLegacyProfileCanActivateAndCloneIntoUUIDFormat(t *testing.T) {
+	root := t.TempDir()
+	paths, err := storage.NewPaths(filepath.Join(root, "config"), filepath.Join(root, "state"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := storage.New(paths)
+	legacy := profile.NewManifest("legacy", "Legacy", "", profile.DefaultEntrypoint, time.Now())
+	if createErr := store.Create(legacy); createErr != nil {
+		t.Fatal(createErr)
+	}
+	selection := session.NewManager(paths)
+	service := NewProfileService(store, store, selection, time.Now)
+	if _, activateErr := service.ActivateProfile("legacy"); activateErr != nil {
+		t.Fatalf("activate legacy: %v", activateErr)
+	}
+	if active, activeErr := selection.Get(); activeErr != nil || active != "legacy" {
+		t.Fatalf("active legacy slug = %q, %v", active, activeErr)
+	}
+	clone, err := service.CloneProfile(CloneProfileInput{SourceID: "legacy", ID: "modern"})
+	if err != nil || clone.FormatVersion != profile.CurrentFormat || clone.DirectoryID() != "modern" || clone.ID == "legacy" {
+		t.Fatalf("clone legacy = %+v, %v", clone, err)
+	}
+	if _, err := store.Load("legacy"); err != nil {
+		t.Fatalf("load original legacy: %v", err)
+	}
 }
 
 func assertArchiveAndRestore(t *testing.T, service *ProfileService) {
@@ -64,7 +94,7 @@ func assertArchiveAndRestore(t *testing.T, service *ProfileService) {
 	if err := service.RestoreProfile("second"); err != nil {
 		t.Fatalf("restore = %v", err)
 	}
-	if status, selected, statusErr := service.Status(); statusErr != nil || !selected || status.ID != "first" {
+	if status, selected, statusErr := service.Status(); statusErr != nil || !selected || status.DirectoryID() != "first" {
 		t.Fatalf("status = %+v, %v, %v", status, selected, statusErr)
 	}
 }
@@ -86,7 +116,7 @@ func TestProfileServiceImportAndValidation(t *testing.T) {
 		t.Fatal(writeErr)
 	}
 	imported, err := service.ImportProfile(ImportProfileInput{Source: source, ID: "imported"})
-	if err != nil || imported.Name != "imported" || imported.Origin != source || imported.Entrypoint != "hyprland.lua" {
+	if err != nil || imported.Name != "imported" || imported.Origin != source || imported.Entrypoint != "hyprland.lua" || imported.DirectoryID() != "imported" {
 		t.Fatalf("import = %+v, %v", imported, err)
 	}
 	stored, err := store.Load("imported")

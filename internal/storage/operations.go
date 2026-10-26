@@ -30,12 +30,12 @@ func (s *Store) Clone(sourceID string, target profile.Manifest) error {
 		return fmt.Errorf("prepare profile storage: %w", ensureErr)
 	}
 
-	destination, err := s.ProfilePath(target.ID)
+	destination, err := s.ProfilePath(target.DirectoryID())
 	if err != nil {
 		return err
 	}
 	if _, statErr := os.Lstat(destination); statErr == nil {
-		return fmt.Errorf("profile %q already exists", target.ID)
+		return fmt.Errorf("profile %q already exists", target.DirectoryID())
 	} else if !errors.Is(statErr, fs.ErrNotExist) {
 		return fmt.Errorf("inspect clone destination: %w", statErr)
 	}
@@ -87,12 +87,12 @@ func (s *Store) CloneFromDirectory(source string, manifest profile.Manifest) err
 		return fmt.Errorf("prepare profile storage: %w", ensureErr)
 	}
 
-	destination, err := s.ProfilePath(manifest.ID)
+	destination, err := s.ProfilePath(manifest.DirectoryID())
 	if err != nil {
 		return err
 	}
 	if _, statErr := os.Lstat(destination); statErr == nil {
-		return fmt.Errorf("profile %q already exists", manifest.ID)
+		return fmt.Errorf("profile %q already exists", manifest.DirectoryID())
 	} else if !errors.Is(statErr, fs.ErrNotExist) {
 		return fmt.Errorf("inspect import destination: %w", statErr)
 	}

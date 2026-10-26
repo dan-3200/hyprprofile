@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,6 +118,27 @@ func TestImportRejectsSymbolicLinks(t *testing.T) {
 	manifest := testManifest("imported", "Imported")
 	if err := store.Import(source, manifest); err == nil {
 		t.Fatal("Import() unexpectedly accepted a symbolic link")
+	}
+}
+
+func TestLegacyManifestLoadsWithoutRewrite(t *testing.T) {
+	store := testStore(t)
+	legacy := testManifest("old-profile", "Old profile")
+	if err := store.Create(legacy); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(store.Paths.ProfilesDir, legacy.ID, profile.ManifestFile)
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := store.Load(legacy.ID)
+	if err != nil || loaded.FormatVersion != profile.LegacyFormat || loaded.DirectoryID() != legacy.ID {
+		t.Fatalf("loaded legacy manifest = %+v, %v", loaded, err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("legacy manifest changed during load: %v", err)
 	}
 }
 
