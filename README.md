@@ -133,7 +133,9 @@ bin/hyprprofile-session-launcher
 ```
 
 Sem argumentos, `hyprprofile` abre o painel TUI. Use `↑`/`↓` ou `j`/`k` para
-navegar, `r` para atualizar e `q` ou `Ctrl+C` para sair.
+navegar, `g`/`Home` e `G`/`End` para ir aos extremos, `Enter` para selecionar
+o perfil para o próximo login, `h` ou `?` para ajuda e
+`q` ou `Ctrl+C` para sair. O painel mostra os detalhes do perfil selecionado.
 
 ## Comandos
 
