@@ -1,17 +1,22 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/app"
-	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
+	app "github.com/dan-3200/hyprprofile/internal/application/usecases"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/templates"
+	"github.com/dan-3200/hyprprofile/internal/presentation/cli"
 )
 
 func TestCLIProfileFlowAndOutput(t *testing.T) {
@@ -21,8 +26,8 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := storage.New(paths)
-	profiles := app.NewProfileService(store, store, session.NewManager(paths), time.Now)
-	system := app.DefaultSystemService(store)
+	profiles := app.NewProfileService(store, store, session.NewManager(paths), inspection.DefaultInspector(), templates.Catalog{}, time.Now)
+	system := app.NewSystemService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
 	cases := []struct {
 		arguments []string
 		want      string
@@ -38,7 +43,7 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 		{[]string{"restore", "copy"}, "Restored profile \"copy\"\n"},
 	}
 	for _, tc := range cases {
-		output, runErr := capturedOutput(func() error { return run(tc.arguments, profiles, system) })
+		output, runErr := capturedOutput(func() error { return cli.Run(tc.arguments, profiles, system, session.DefaultSessionDirectory) })
 		if runErr != nil || !strings.HasPrefix(output, tc.want) {
 			t.Fatalf("run(%q) = %q, %v; want prefix %q", tc.arguments, output, runErr, tc.want)
 		}
@@ -48,8 +53,32 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 	}
 }
 
+func TestCLIExitCodeOnMissingProfile(t *testing.T) {
+	if os.Getenv("HYPRPROFILE_TEST_CHILD") == "1" {
+		os.Args = []string{"hyprprofile", "activate", "missing"}
+		main()
+		return
+	}
+	root := t.TempDir()
+	// #nosec G702 -- this test reruns its own executable with fixed test arguments.
+	command := exec.Command(os.Args[0], "-test.run=^TestCLIExitCodeOnMissingProfile$")
+	command.Env = append(os.Environ(),
+		"HYPRPROFILE_TEST_CHILD=1",
+		"XDG_CONFIG_HOME="+filepath.Join(root, "config"),
+		"XDG_STATE_HOME="+filepath.Join(root, "state"),
+	)
+	output, err := command.CombinedOutput()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		t.Fatalf("exit = %v, output = %q", err, output)
+	}
+	if !strings.Contains(string(output), "hyprprofile: load profile:") {
+		t.Fatalf("stderr = %q", output)
+	}
+}
+
 func runError(arguments []string, profiles *app.ProfileService, system *app.SystemService) (string, error) {
-	return capturedOutput(func() error { return run(arguments, profiles, system) })
+	return capturedOutput(func() error { return cli.Run(arguments, profiles, system, session.DefaultSessionDirectory) })
 }
 
 func capturedOutput(action func() error) (string, error) {

@@ -119,6 +119,10 @@ linters:
       - common-false-positives
       - std-error-handling
     rules:
+      # Ports are intentionally declared here and consumed by sibling packages.
+      - path: internal/application/ports/ports\.go
+        linters:
+          - iface
       # Tests intentionally launch fake binaries and operate on temporary
       # user-controlled paths. Keep every other gosec rule active in tests.
       - path: _test\.go
