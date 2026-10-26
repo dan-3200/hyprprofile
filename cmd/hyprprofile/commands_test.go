@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +17,8 @@ import (
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/templates"
 	"github.com/dan-3200/hyprprofile/internal/presentation/cli"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCLIProfileFlowAndOutput(t *testing.T) {
@@ -45,13 +46,11 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 	}
 	for _, tc := range cases {
 		output, runErr := capturedOutput(func() error { return cli.Run(tc.arguments, profiles, system, session.DefaultSessionDirectory) })
-		if runErr != nil || !strings.HasPrefix(output, tc.want) {
-			t.Fatalf("run(%q) = %q, %v; want prefix %q", tc.arguments, output, runErr, tc.want)
-		}
+		require.NoError(t, runErr, "run(%q)", tc.arguments)
+		assert.True(t, strings.HasPrefix(output, tc.want), "run(%q) = %q; want prefix %q", tc.arguments, output, tc.want)
 	}
-	if _, err := runError([]string{"remove", "work"}, profiles, system); err == nil || err.Error() != "cannot remove the active profile; activate another profile first" {
-		t.Fatalf("active remove error = %v", err)
-	}
+	_, err = runError([]string{"remove", "work"}, profiles, system)
+	require.EqualError(t, err, "cannot remove the active profile; activate another profile first")
 }
 
 func TestCLIExitCodeOnMissingProfile(t *testing.T) {
@@ -70,12 +69,9 @@ func TestCLIExitCodeOnMissingProfile(t *testing.T) {
 	)
 	output, err := command.CombinedOutput()
 	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
-		t.Fatalf("exit = %v, output = %q", err, output)
-	}
-	if !strings.Contains(string(output), "hyprprofile: load profile:") {
-		t.Fatalf("stderr = %q", output)
-	}
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Contains(t, string(output), "hyprprofile: load profile:")
 }
 
 func runError(arguments []string, profiles *profiles.ProfileService, system *system.Service) (string, error) {

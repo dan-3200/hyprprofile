@@ -4,15 +4,16 @@ import (
 	"testing"
 	"time"
 	"uuid"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateID(t *testing.T) {
 	t.Parallel()
 	valid := []string{"minimal", "serpantinum", "a", "profile-42"}
 	for _, id := range valid {
-		if err := ValidateID(id); err != nil {
-			t.Errorf("ValidateID(%q) returned %v", id, err)
-		}
+		assert.NoError(t, ValidateID(id), "ValidateID(%q)", id)
 	}
 }
 
@@ -20,9 +21,7 @@ func TestValidateIDRejectsUnsafeValues(t *testing.T) {
 	t.Parallel()
 	invalid := []string{"", "Upper", "-prefix", "has_space", "../escape", "a/child"}
 	for _, id := range invalid {
-		if err := ValidateID(id); err == nil {
-			t.Errorf("ValidateID(%q) unexpectedly succeeded", id)
-		}
+		assert.Error(t, ValidateID(id), "ValidateID(%q)", id)
 	}
 }
 
@@ -56,9 +55,11 @@ func TestUUIDManifestIdentityAndLegacyCompatibility(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	modern := NewUUIDManifest("work", "Work", "", DefaultEntrypoint, now)
 	parsed, err := uuid.Parse(modern.ID)
-	if err != nil || modern.Validate() != nil || modern.DirectoryID() != "work" || parsed.String() != modern.ID || parsed[6]>>4 != 4 {
-		t.Fatalf("UUID manifest = %+v, %v", modern, err)
-	}
+	require.NoError(t, err)
+	require.NoError(t, modern.Validate())
+	assert.Equal(t, "work", modern.DirectoryID())
+	assert.Equal(t, modern.ID, parsed.String())
+	assert.Equal(t, byte(4), parsed[6]>>4)
 	legacy := NewManifest("work", "Work", "", DefaultEntrypoint, now)
 	if err := legacy.Validate(); err != nil || legacy.DirectoryID() != "work" {
 		t.Fatalf("legacy manifest = %+v, %v", legacy, err)

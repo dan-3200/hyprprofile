@@ -12,6 +12,8 @@ import (
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/templates"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProfileServiceLifecycle(t *testing.T) {
@@ -25,9 +27,10 @@ func TestProfileServiceLifecycle(t *testing.T) {
 	stamp := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	service := NewProfileService(store, store, selection, inspection.DefaultInspector(), templates.Catalog{}, func() time.Time { return stamp })
 
-	if status, selected, statusErr := service.Status(); statusErr != nil || selected {
-		t.Fatalf("initial status = %v, %v, %v", status, selected, statusErr)
-	}
+	status, selected, statusErr := service.Status()
+	require.NoError(t, statusErr)
+	assert.False(t, selected)
+	assert.Equal(t, profile.Manifest{}, status)
 	created, err := service.CreateProfile(CreateProfileInput{ID: "first", Name: "First"})
 	if err != nil || created.Template != profile.DefaultTemplate || !created.CreatedAt.Equal(stamp) || created.DirectoryID() != "first" || created.ID == "first" || created.FormatVersion != profile.CurrentFormat {
 		t.Fatalf("create = %+v, %v", created, err)
@@ -37,13 +40,13 @@ func TestProfileServiceLifecycle(t *testing.T) {
 		t.Fatalf("clone = %+v, %v", cloned, err)
 	}
 	assertWarningsDoNotBlock(t, service)
-	if _, activateErr := service.ActivateProfile("first"); activateErr != nil {
-		t.Fatalf("activate = %v", activateErr)
-	}
+	_, activateErr := service.ActivateProfile("first")
+	require.NoError(t, activateErr)
 	items, err := service.ListProfiles()
-	if err != nil || len(items) != 2 || !items[0].Active || items[1].Active {
-		t.Fatalf("list = %+v, %v", items, err)
-	}
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	assert.True(t, items[0].Active)
+	assert.False(t, items[1].Active)
 	assertArchiveAndRestore(t, service)
 }
 

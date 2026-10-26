@@ -9,6 +9,8 @@ import (
 
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSystemServiceDoctorAndSessionEntry(t *testing.T) {
@@ -30,9 +32,11 @@ func TestSystemServiceDoctorAndSessionEntry(t *testing.T) {
 	resolver := session.LauncherResolver{Lookup: lookup, Executable: func() (string, error) { return filepath.Join(root, "hyprprofile"), nil }}
 	service := NewService(storage.New(paths), lookup, session.DesktopEntry{}, resolver)
 	report, err := service.Doctor()
-	if err != nil || len(report) != 3 || !report[0].Available || report[1].Available || report[2].Available {
-		t.Fatalf("doctor = %+v, %v", report, err)
-	}
+	require.NoError(t, err)
+	require.Len(t, report, 3)
+	assert.True(t, report[0].Available)
+	assert.False(t, report[1].Available)
+	assert.False(t, report[2].Available)
 	directory := filepath.Join(root, "wayland-sessions")
 	destination, err := service.InstallSession(directory, "")
 	if err != nil {
@@ -43,9 +47,8 @@ func TestSystemServiceDoctorAndSessionEntry(t *testing.T) {
 		t.Fatalf("session entry = %q, %v", data, err)
 	}
 	removed, err := service.UninstallSession(directory)
-	if err != nil || removed != destination {
-		t.Fatalf("uninstall = %q, %v", removed, err)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, destination, removed)
 	if _, err := os.Stat(destination); !os.IsNotExist(err) {
 		t.Fatalf("session entry still exists: %v", err)
 	}

@@ -11,6 +11,8 @@ import (
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrepareUsesStartHyprland(t *testing.T) {
@@ -35,19 +37,11 @@ func TestPrepareUsesStartHyprland(t *testing.T) {
 		return "", fmt.Errorf("%s unavailable", command)
 	}
 	plan, err := Prepare(store, manager, inspection.DefaultInspector(), lookup)
-	if err != nil {
-		t.Fatalf("prepareLaunch() error = %v", err)
-	}
-	if plan.Executable != "/usr/bin/start-hyprland" {
-		t.Fatalf("executable = %q", plan.Executable)
-	}
-	if len(plan.Arguments) != 4 || plan.Arguments[1] != "--" || plan.Arguments[2] != "--config" {
-		t.Fatalf("arguments = %#v", plan.Arguments)
-	}
-	if err := os.Remove(filepath.Join(paths.ProfilesDir, manifest.DirectoryID(), manifest.Entrypoint)); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Prepare(store, manager, inspection.DefaultInspector(), lookup); err == nil {
-		t.Fatal("launcher accepted a missing active configuration")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "/usr/bin/start-hyprland", plan.Executable)
+	assert.Equal(t, []string{"start-hyprland", "--", "--config", filepath.Join(paths.ProfilesDir, manifest.DirectoryID(), manifest.Entrypoint)}, plan.Arguments)
+	removeErr := os.Remove(filepath.Join(paths.ProfilesDir, manifest.DirectoryID(), manifest.Entrypoint))
+	require.NoError(t, removeErr)
+	_, err = Prepare(store, manager, inspection.DefaultInspector(), lookup)
+	require.Error(t, err)
 }

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateCloneArchiveAndRestore(t *testing.T) {
@@ -21,24 +22,17 @@ func TestCreateCloneArchiveAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if loaded.Name != base.Name {
-		t.Fatalf("loaded name = %q, want %q", loaded.Name, base.Name)
-	}
-	if loaded.Template != profile.DefaultTemplate {
-		t.Fatalf("template = %q, want %q", loaded.Template, profile.DefaultTemplate)
-	}
+	assert.Equal(t, base.Name, loaded.Name)
+	assert.Equal(t, profile.DefaultTemplate, loaded.Template)
 
 	clone := testManifest("serpantinum", "Serpantinum")
 	clone.Entrypoint = base.Entrypoint
-	if err := store.Clone("minimal", clone); err != nil {
-		t.Fatalf("Clone() error = %v", err)
-	}
-	if _, err := store.Archive("minimal"); err != nil {
-		t.Fatalf("Archive() error = %v", err)
-	}
-	if _, err := store.Load("minimal"); err == nil {
-		t.Fatal("Load(minimal) unexpectedly succeeded after archive")
-	}
+	cloneErr := store.Clone("minimal", clone)
+	require.NoError(t, cloneErr)
+	_, archiveErr := store.Archive("minimal")
+	require.NoError(t, archiveErr)
+	_, err = store.Load("minimal")
+	require.Error(t, err)
 	if err := store.Restore("minimal"); err != nil {
 		t.Fatalf("Restore() error = %v", err)
 	}
@@ -57,33 +51,25 @@ func TestCreateFromTemplateRecordsAndWritesSelection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if loaded.Template != "bare" {
-		t.Fatalf("template = %q, want bare", loaded.Template)
-	}
+	assert.Equal(t, "bare", loaded.Template)
 	data, err := os.ReadFile(filepath.Join(store.Paths.ProfilesDir, manifest.ID, manifest.Entrypoint))
 	if err != nil {
 		t.Fatalf("read entrypoint: %v", err)
 	}
-	if !strings.Contains(string(data), "without optional desktop components") {
-		t.Fatalf("entrypoint does not contain bare template marker")
-	}
+	assert.Contains(t, string(data), "without optional desktop components")
 }
 
 func TestCreateFromTemplateRejectsUnknownTemplate(t *testing.T) {
 	store := testStore(t)
 	manifest := testManifest("unknown-template", "Unknown template")
-	if err := store.CreateFromTemplate(manifest, "unknown"); err == nil {
-		t.Fatal("CreateFromTemplate() unexpectedly accepted an unknown template")
-	}
+	require.Error(t, store.CreateFromTemplate(manifest, "unknown"))
 }
 
 func TestCreateFromTemplateRequiresLuaEntrypoint(t *testing.T) {
 	store := testStore(t)
 	manifest := testManifest("legacy-entrypoint", "Legacy entrypoint")
 	manifest.Entrypoint = "hyprland.conf"
-	if err := store.CreateFromTemplate(manifest, "minimal"); err == nil {
-		t.Fatal("CreateFromTemplate() unexpectedly accepted a non-Lua entrypoint")
-	}
+	require.Error(t, store.CreateFromTemplate(manifest, "minimal"))
 }
 
 func TestCreateFromTemplateWritesMultipleFiles(t *testing.T) {

@@ -3,8 +3,10 @@ package session
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInstallAndRemoveDesktopEntry(t *testing.T) {
@@ -22,26 +24,19 @@ func TestInstallAndRemoveDesktopEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read desktop entry: %v", err)
 	}
-	if !strings.Contains(string(data), "Exec=\""+launcher+"\"") {
-		t.Fatalf("desktop entry = %q", data)
-	}
+	assert.Contains(t, string(data), "Exec=\""+launcher+"\"")
 	info, err := os.Stat(destination)
 	if err != nil {
 		t.Fatalf("stat desktop entry: %v", err)
 	}
-	if info.Mode().Perm() != 0o644 {
-		t.Fatalf("desktop entry mode = %o", info.Mode().Perm())
-	}
-	if _, err := RemoveDesktopEntry(directory); err != nil {
-		t.Fatalf("RemoveDesktopEntry() error = %v", err)
-	}
-	if _, err := os.Stat(destination); !os.IsNotExist(err) {
-		t.Fatalf("desktop entry still exists: %v", err)
-	}
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+	_, removeErr := RemoveDesktopEntry(directory)
+	require.NoError(t, removeErr)
+	_, err = os.Stat(destination)
+	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestInstallDesktopEntryRejectsRelativeLauncher(t *testing.T) {
-	if _, err := InstallDesktopEntry(t.TempDir(), "hyprprofile-session-launcher"); err == nil {
-		t.Fatal("InstallDesktopEntry() accepted a relative launcher")
-	}
+	_, err := InstallDesktopEntry(t.TempDir(), "hyprprofile-session-launcher")
+	require.Error(t, err)
 }

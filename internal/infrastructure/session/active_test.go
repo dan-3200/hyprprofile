@@ -7,6 +7,7 @@ import (
 
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
 	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/stretchr/testify/require"
 )
 
 func TestActivateWritesAndReadsProfileID(t *testing.T) {
@@ -28,7 +29,5 @@ func TestActivateWritesAndReadsProfileID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if active != manifest.ID {
-		t.Fatalf("active profile = %q, want %q", active, manifest.ID)
-	}
+	require.Equal(t, manifest.ID, active)
 }

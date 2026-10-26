@@ -3,25 +3,21 @@ package templates
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCatalogTemplatesAreEmbeddedAndOperable(t *testing.T) {
 	t.Parallel()
 	for _, template := range Templates() {
 		metadata, files, err := LoadTemplate(template.Name)
-		if err != nil {
-			t.Errorf("LoadTemplate(%q) error = %v", template.Name, err)
-			continue
-		}
-		if metadata.Name != template.Name || len(files) == 0 {
-			t.Errorf("LoadTemplate(%q) returned incomplete data", template.Name)
-			continue
-		}
+		require.NoError(t, err, "LoadTemplate(%q)", template.Name)
+		require.Equal(t, template.Name, metadata.Name)
+		require.NotEmpty(t, files)
 		entrypoint := templateFileContents(files, metadata.Entrypoint)
 		for _, expected := range []string{"SUPER", "RETURN", "kitty", "hl.dsp.exit"} {
-			if !strings.Contains(entrypoint, expected) && !templateFilesContain(files, expected) {
-				t.Errorf("template %q does not contain %q", template.Name, expected)
-			}
+			assert.True(t, strings.Contains(entrypoint, expected) || templateFilesContain(files, expected), "template %q does not contain %q", template.Name, expected)
 		}
 	}
 }
@@ -29,9 +25,8 @@ func TestCatalogTemplatesAreEmbeddedAndOperable(t *testing.T) {
 func TestLoadTemplateRejectsUnknownAndUnsafeNames(t *testing.T) {
 	t.Parallel()
 	for _, name := range []string{"unknown", "../minimal", "/minimal"} {
-		if _, _, err := LoadTemplate(name); err == nil {
-			t.Errorf("LoadTemplate(%q) unexpectedly succeeded", name)
-		}
+		_, _, err := LoadTemplate(name)
+		assert.Error(t, err, "LoadTemplate(%q)", name)
 	}
 }
 

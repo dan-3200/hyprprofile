@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateProfileRejectsEntrypointSymlinkOutsideProfile(t *testing.T) {
@@ -20,7 +21,5 @@ func TestValidateProfileRejectsEntrypointSymlinkOutsideProfile(t *testing.T) {
 	}
 	manifest := profile.NewManifest("minimal", "Minimal", "", profile.DefaultEntrypoint, time.Now())
 	result := ValidateProfile(root, manifest, false)
-	if result.Valid() {
-		t.Fatal("ValidateProfile() unexpectedly accepted an escaping symbolic link")
-	}
+	require.False(t, result.Valid(), "ValidateProfile() unexpectedly accepted an escaping symbolic link")
 }

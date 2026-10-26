@@ -1,12 +1,13 @@
 package tui
 
 import (
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/dan-3200/hyprprofile/internal/application/profiles"
 	"github.com/dan-3200/hyprprofile/internal/domain/profile"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeProfileLister struct {
@@ -24,28 +25,18 @@ func TestDashboardLoadsAndRefreshesFromService(t *testing.T) {
 	source := &fakeProfileLister{items: []profiles.ProfileListItem{{Manifest: item, Active: true}}}
 	dashboard := model{profilesSource: source}
 	loaded, ok := dashboard.Init()().(loadedMessage)
-	if !ok {
-		t.Fatal("initial command did not load profiles")
-	}
+	require.True(t, ok, "initial command did not load profiles")
 	updated, _ := dashboard.Update(loaded)
 	dashboard, ok = updated.(model)
-	if !ok {
-		t.Fatal("update returned an unexpected model")
-	}
-	if source.calls != 1 || !strings.Contains(dashboard.View().Content, "Work (work)") {
-		t.Fatalf("dashboard did not load profile: calls=%d", source.calls)
-	}
+	require.True(t, ok, "update returned an unexpected model")
+	assert.Equal(t, 1, source.calls)
+	assert.Contains(t, dashboard.View().Content, "Work (work)")
 	source.items = nil
 	loaded, ok = dashboard.load().(loadedMessage)
-	if !ok {
-		t.Fatal("refresh did not load profiles")
-	}
+	require.True(t, ok, "refresh did not load profiles")
 	updated, _ = dashboard.Update(loaded)
 	dashboard, ok = updated.(model)
-	if !ok {
-		t.Fatal("refresh returned an unexpected model")
-	}
-	if source.calls != 2 || !strings.Contains(dashboard.View().Content, "Nenhum perfil criado") {
-		t.Fatalf("dashboard did not refresh: calls=%d", source.calls)
-	}
+	require.True(t, ok, "refresh returned an unexpected model")
+	assert.Equal(t, 2, source.calls)
+	assert.Contains(t, dashboard.View().Content, "Nenhum perfil criado")
 }
