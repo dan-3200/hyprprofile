@@ -4,14 +4,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/app"
-	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
+	"github.com/dan-3200/hyprprofile/internal/application/system"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/templates"
+	"github.com/dan-3200/hyprprofile/internal/presentation/cli"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCLIProfileFlowAndOutput(t *testing.T) {
@@ -21,8 +28,8 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := storage.New(paths)
-	profiles := app.NewProfileService(store, store, session.NewManager(paths), time.Now)
-	system := app.DefaultSystemService(store)
+	profiles := profiles.NewProfileService(store, store, session.NewManager(paths), inspection.DefaultInspector(), templates.Catalog{}, time.Now)
+	system := system.NewService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
 	cases := []struct {
 		arguments []string
 		want      string
@@ -38,18 +45,37 @@ func TestCLIProfileFlowAndOutput(t *testing.T) {
 		{[]string{"restore", "copy"}, "Restored profile \"copy\"\n"},
 	}
 	for _, tc := range cases {
-		output, runErr := capturedOutput(func() error { return run(tc.arguments, profiles, system) })
-		if runErr != nil || !strings.HasPrefix(output, tc.want) {
-			t.Fatalf("run(%q) = %q, %v; want prefix %q", tc.arguments, output, runErr, tc.want)
-		}
+		output, runErr := capturedOutput(func() error { return cli.Run(tc.arguments, profiles, system, session.DefaultSessionDirectory) })
+		require.NoError(t, runErr, "run(%q)", tc.arguments)
+		assert.True(t, strings.HasPrefix(output, tc.want), "run(%q) = %q; want prefix %q", tc.arguments, output, tc.want)
 	}
-	if _, err := runError([]string{"remove", "work"}, profiles, system); err == nil || err.Error() != "cannot remove the active profile; activate another profile first" {
-		t.Fatalf("active remove error = %v", err)
-	}
+	_, err = runError([]string{"remove", "work"}, profiles, system)
+	require.EqualError(t, err, "cannot remove the active profile; activate another profile first")
 }
 
-func runError(arguments []string, profiles *app.ProfileService, system *app.SystemService) (string, error) {
-	return capturedOutput(func() error { return run(arguments, profiles, system) })
+func TestCLIExitCodeOnMissingProfile(t *testing.T) {
+	if os.Getenv("HYPRPROFILE_TEST_CHILD") == "1" {
+		os.Args = []string{"hyprprofile", "activate", "missing"}
+		main()
+		return
+	}
+	root := t.TempDir()
+	// #nosec G702 -- this test reruns its own executable with fixed test arguments.
+	command := exec.Command(os.Args[0], "-test.run=^TestCLIExitCodeOnMissingProfile$")
+	command.Env = append(os.Environ(),
+		"HYPRPROFILE_TEST_CHILD=1",
+		"XDG_CONFIG_HOME="+filepath.Join(root, "config"),
+		"XDG_STATE_HOME="+filepath.Join(root, "state"),
+	)
+	output, err := command.CombinedOutput()
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
+	assert.Contains(t, string(output), "hyprprofile: load profile:")
+}
+
+func runError(arguments []string, profiles *profiles.ProfileService, system *system.Service) (string, error) {
+	return capturedOutput(func() error { return cli.Run(arguments, profiles, system, session.DefaultSessionDirectory) })
 }
 
 func capturedOutput(action func() error) (string, error) {

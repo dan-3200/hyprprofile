@@ -4,12 +4,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
-	"github.com/dan-3200/hyprprofile/internal/app"
-	"github.com/dan-3200/hyprprofile/internal/session"
-	"github.com/dan-3200/hyprprofile/internal/storage"
-	"github.com/dan-3200/hyprprofile/internal/tui"
+	"github.com/dan-3200/hyprprofile/internal/application/profiles"
+	"github.com/dan-3200/hyprprofile/internal/application/system"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/inspection"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/session"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/storage"
+	"github.com/dan-3200/hyprprofile/internal/infrastructure/templates"
+	"github.com/dan-3200/hyprprofile/internal/presentation/cli"
+	"github.com/dan-3200/hyprprofile/internal/presentation/tui"
 )
 
 func main() {
@@ -26,8 +31,8 @@ func mainError() error {
 	}
 	store := storage.New(paths)
 	manager := session.NewManager(paths)
-	profiles := app.NewProfileService(store, store, manager, time.Now)
-	system := app.DefaultSystemService(store)
+	profiles := profiles.NewProfileService(store, store, manager, inspection.DefaultInspector(), templates.Catalog{}, time.Now)
+	system := system.NewService(store, exec.LookPath, session.DesktopEntry{}, session.DefaultLauncherResolver())
 
 	if len(os.Args) == 1 {
 		if err := tui.Run(profiles); err != nil {
@@ -35,5 +40,8 @@ func mainError() error {
 		}
 		return nil
 	}
-	return run(os.Args[1:], profiles, system)
+	if err := cli.Run(os.Args[1:], profiles, system, session.DefaultSessionDirectory); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
